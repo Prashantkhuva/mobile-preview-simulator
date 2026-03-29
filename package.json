@@ -1,6 +1,6 @@
 {
   "name": "mobile-preview-simulator",
-  "publisher": "Prashanthkhuva",
+  "publisher": "Prashantkhuva",
   "displayName": "Mobile Preview Simulator",
   "description": "Preview a local web app inside a polished mobile-sized webview.",
    "homepage": "https://github.com/Prashanthkhuva/mobile-preview-simulator",
@@ -71,5 +71,9 @@
   },
   "devDependencies": {
     "sharp": "^0.34.5"
-  }
+  },
+  "repository": {
+  "type": "git",
+  "url": "https://github.com/<your-username>/mobile-preview-simulator.git"
+}
 }
