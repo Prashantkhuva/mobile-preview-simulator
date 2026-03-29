@@ -1,0 +1,45 @@
+<svg width="100%" height="100%" viewBox="0 0 600 120" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="shortcutTitle shortcutDesc" preserveAspectRatio="xMidYMid meet">
+  <title id="shortcutTitle">Open Preview shortcut banner</title>
+  <desc id="shortcutDesc">A small banner showing a VS Code title bar with an arrow pointing to the Open Preview button.</desc>
+  <defs>
+    <linearGradient id="shortcutBg" x1="0" y1="0" x2="600" y2="120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#202020"/>
+      <stop offset="1" stop-color="#1A1A1A"/>
+    </linearGradient>
+    <linearGradient id="shortcutAccent" x1="376" y1="28" x2="535" y2="84" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#3B82F6"/>
+    </linearGradient>
+    <filter id="shortcutShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <rect x="4" y="4" width="592" height="112" rx="12" fill="url(#shortcutBg)"/>
+  <rect x="4" y="4" width="592" height="112" rx="12" stroke="#2B3140"/>
+
+  <text x="26" y="28" fill="#FFFFFF" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="700">Click to open mobile preview</text>
+
+  <g filter="url(#shortcutShadow)">
+    <rect x="24" y="40" width="552" height="56" rx="12" fill="#10141C" stroke="#2A3140"/>
+    <rect x="36" y="56" width="18" height="18" rx="4" stroke="#D1D5DB" stroke-width="2"/>
+    <path d="M41 69L46 64L50 68L55 61" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M72 50L86 58L72 66V50Z" stroke="#D1D5DB" stroke-width="2.5" stroke-linejoin="round"/>
+    <circle cx="112" cy="58" r="8" stroke="#D1D5DB" stroke-width="2"/>
+    <path d="M130 58H144" stroke="#D1D5DB" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="166" cy="58" r="8" stroke="#D1D5DB" stroke-width="2"/>
+    <circle cx="198" cy="58" r="8" stroke="#D1D5DB" stroke-width="2"/>
+    <path d="M226 49V67M238 49V67" stroke="#D1D5DB" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="266" cy="58" r="8" stroke="#D1D5DB" stroke-width="2"/>
+    <path d="M286 50H300M286 66H300" stroke="#D1D5DB" stroke-width="2.5" stroke-linecap="round"/>
+
+    <rect x="360" y="50" width="164" height="34" rx="12" fill="url(#shortcutAccent)" stroke="#94A3FF"/>
+    <rect x="374" y="58" width="14" height="14" rx="3" stroke="#FFFFFF" stroke-width="2"/>
+    <path d="M377 69L381 65L384 68L388 62" stroke="#FFFFFF" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="398" y="71" fill="#FFFFFF" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700">Open Preview</text>
+  </g>
+
+  <path d="M534 24L560 40" stroke="#6366F1" stroke-width="4" stroke-linecap="round"/>
+  <path d="M560 40L546 41" stroke="#6366F1" stroke-width="4" stroke-linecap="round"/>
+  <path d="M560 40L553 52" stroke="#6366F1" stroke-width="4" stroke-linecap="round"/>
+</svg>

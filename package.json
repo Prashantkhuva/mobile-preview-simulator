@@ -1,0 +1,75 @@
+{
+  "name": "mobile-preview-simulator",
+  "publisher": "Prashanthkhuva",
+  "displayName": "Mobile Preview Simulator",
+  "description": "Preview a local web app inside a polished mobile-sized webview.",
+   "homepage": "https://github.com/Prashanthkhuva/mobile-preview-simulator",
+  "version": "2.0.1",
+  "license": "MIT",
+  "keywords": [
+    "mobile",
+    "preview",
+    "simulator",
+    "responsive",
+    "device"
+  ],
+  "galleryBanner": {
+    "color": "#0d0d0d",
+    "theme": "dark"
+  },
+  "engines": {
+    "vscode": "^1.105.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:mobile-preview-simulator.openPreview",
+    "onView:mobile-preview-view"
+  ],
+  "main": "./dist/extension.js",
+  "icon": "images/logo.png",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "mobile-preview-container",
+          "title": "Preview",
+          "icon": "images/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "mobile-preview-container": [
+        {
+          "id": "mobile-preview-view",
+          "name": "Mobile Preview",
+          "type": "webview"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "mobile-preview-simulator.openPreview",
+        "title": "Open Preview",
+        "shortTitle": "Preview",
+        "icon": {
+          "light": "images/icon.svg",
+          "dark": "images/icon-dark.svg"
+        }
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "mobile-preview-simulator.openPreview",
+          "group": "navigation",
+          "icon": "images/icon.svg"
+        }
+      ]
+    }
+  },
+  "devDependencies": {
+    "sharp": "^0.34.5"
+  }
+}
