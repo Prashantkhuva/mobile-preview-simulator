@@ -4,7 +4,7 @@
   "displayName": "Mobile Preview Simulator",
   "description": "Preview a local web app inside a polished mobile-sized webview.",
    "homepage": "https://github.com/Prashantkhuva/mobile-preview-simulator",
-  "version": "3.0.3",
+  "version": "3.1.0",
   "license": "MIT",
   "keywords": [
     "mobile",

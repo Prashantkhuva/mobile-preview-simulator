@@ -888,6 +888,91 @@ function getHtml(targetUrl) {
       display: none;
     }
 
+    .frame-overlay {
+      position: absolute;
+      top: 50px;
+      left: 0;
+      right: 0;
+      bottom: 34px;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f5f5f7;
+      transition: opacity 0.25s ease;
+    }
+
+    .frame-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .frame-overlay-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      text-align: center;
+      padding: 24px;
+      max-width: 280px;
+    }
+
+    .frame-overlay-content .spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid rgba(0,0,0,0.08);
+      border-top-color: #555;
+      border-radius: 50%;
+      animation: fspin 0.7s linear infinite;
+    }
+
+    @keyframes fspin {
+      to { transform: rotate(360deg); }
+    }
+
+    .frame-overlay-content .icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font: 16px/1 sans-serif;
+      color: rgba(0,0,0,0.4);
+    }
+
+    .frame-overlay-content .msg {
+      font-size: 13px;
+      color: rgba(0,0,0,0.7);
+      line-height: 1.4;
+    }
+
+    .frame-overlay-content .sub {
+      font-size: 11px;
+      color: rgba(0,0,0,0.35);
+      word-break: break-all;
+    }
+
+    .frame-overlay-content .rbtn {
+      margin-top: 4px;
+      padding: 6px 20px;
+      border-radius: 999px;
+      border: 1px solid rgba(0,0,0,0.12);
+      background: transparent;
+      color: rgba(0,0,0,0.55);
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .frame-overlay-content .rbtn:hover {
+      background: rgba(0,0,0,0.06);
+    }
+
+    .frame-overlay.hidden .spinner {
+      animation-play-state: paused;
+    }
+
     @media (max-width: 640px) {
       .toolbar {
         padding: 8px 12px;
@@ -929,6 +1014,16 @@ function getHtml(targetUrl) {
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
             ></iframe>
 
+            <div id="frameOverlay" class="frame-overlay hidden">
+              <div class="frame-overlay-content">
+                <div id="overlaySpinner" class="spinner"></div>
+                <div id="overlayIcon" class="icon hidden">!</div>
+                <div id="overlayMsg" class="msg">Connecting...</div>
+                <div id="overlaySub" class="sub"></div>
+                <button id="retryBtn" class="rbtn hidden">Retry</button>
+              </div>
+            </div>
+
             <div class="address-bar-wrap">
               <input
                 id="urlInput"
@@ -962,7 +1057,50 @@ function getHtml(targetUrl) {
     const volumeUp = document.getElementById("volumeUp");
     const volumeDown = document.getElementById("volumeDown");
     const powerButton = document.getElementById("powerButton");
+    const previewFrame = document.getElementById("previewFrame");
+    const frameOverlay = document.getElementById("frameOverlay");
+    const overlaySpinner = document.getElementById("overlaySpinner");
+    const overlayIcon = document.getElementById("overlayIcon");
+    const overlayMsg = document.getElementById("overlayMsg");
+    const overlaySub = document.getElementById("overlaySub");
+    const retryBtn = document.getElementById("retryBtn");
     urlInput.dataset.fullUrl = "${safeJsUrl}";
+
+    let connectTimer;
+
+    function setOverlay(state, url) {
+      clearTimeout(connectTimer);
+      if (state === "hidden") {
+        frameOverlay.classList.add("hidden");
+        return;
+      }
+      frameOverlay.classList.remove("hidden");
+      if (state === "loading") {
+        overlaySpinner.classList.remove("hidden");
+        overlayIcon.classList.add("hidden");
+        overlayMsg.textContent = "Connecting\u2026";
+        overlaySub.textContent = url || "";
+        retryBtn.classList.add("hidden");
+        connectTimer = setTimeout(function () {
+          setOverlay("error", url);
+        }, 12000);
+      } else if (state === "error") {
+        overlaySpinner.classList.add("hidden");
+        overlayIcon.classList.remove("hidden");
+        overlayMsg.textContent = "Unable to connect";
+        overlaySub.textContent = url || "";
+        retryBtn.classList.remove("hidden");
+      }
+    }
+
+    previewFrame.addEventListener("load", function () {
+      clearTimeout(connectTimer);
+      setOverlay("hidden");
+    });
+
+    retryBtn.addEventListener("click", function () {
+      submit();
+    });
 
     function isDynamicIslandDevice(definition) {
       return definition.os === "ios" && /^iphone-(14|15|16|17)/.test(definition.id);
@@ -1065,7 +1203,8 @@ function getHtml(targetUrl) {
       const url = normalizeUrl(urlInput.value);
       urlInput.dataset.fullUrl = url;
       urlInput.value = getUrlDisplayValue(url);
-      document.getElementById("previewFrame").src = url;
+      previewFrame.src = url;
+      setOverlay("loading", url);
       vscode.postMessage({ command: "loadUrl", url });
     }
 
@@ -1094,6 +1233,7 @@ function getHtml(targetUrl) {
     window.addEventListener("resize", scaleFrame);
 
     urlInput.value = getUrlDisplayValue(urlInput.dataset.fullUrl);
+    setOverlay("loading", urlInput.dataset.fullUrl);
     renderDevice();
   </script>
 </body>
