@@ -6,6 +6,14 @@ const COMMAND = "mobile-preview-simulator.openPreview";
 const VIEW_TYPE = "mobilePreviewSimulator";
 const DEFAULT_URL = "http://localhost:5173";
 
+function escapeJs(value) {
+  return String(value)
+    .replaceAll("\\", "\\\\")
+    .replaceAll("`", "\\`")
+    .replaceAll("${", "\\${")
+    .replaceAll('"', '\\"');
+}
+
 const DEVICE_GROUPS = [
   {
     group: "Apple",
@@ -290,7 +298,9 @@ let currentPanel;
 let currentState = { url: DEFAULT_URL };
 
 function activate(context) {
-  const openPreviewCommand = vscode.commands.registerCommand(COMMAND, async () => {
+  const openPreviewCommand = vscode.commands.registerCommand(
+    COMMAND,
+    async () => {
       if (currentPanel) {
         currentPanel.reveal(vscode.ViewColumn.Beside);
         return;
@@ -309,44 +319,38 @@ function activate(context) {
       currentPanel = panel;
       panel.iconPath = {
         light: vscode.Uri.joinPath(context.extensionUri, "images", "icon.svg"),
-        dark: vscode.Uri.joinPath(context.extensionUri, "images", "icon-dark.svg"),
+        dark: vscode.Uri.joinPath(
+          context.extensionUri,
+          "images",
+          "icon-dark.svg",
+        ),
       };
 
-      const initialUrl = currentState.url;
-      const normalized = normalizeUrl(initialUrl);
-      const externalUri = await vscode.env.asExternalUri(
-        vscode.Uri.parse(normalized),
-      );
-      currentState.url = normalized;
-      panel.webview.html = getHtml(normalized, externalUri.toString());
+      const render = (targetUrl) => {
+        const normalized = normalizeUrl(targetUrl);
+        currentState.url = normalized;
+        panel.webview.html = getHtml(normalized);
+      };
 
-      panel.webview.onDidReceiveMessage(async (message) => {
-        if (!message) return;
-
-        if (message.command === "resolveUrl") {
-          try {
-            const resolved = await vscode.env.asExternalUri(
-              vscode.Uri.parse(message.url || currentState.url),
-            );
-            currentState.url = message.url || currentState.url;
-            await panel.webview.postMessage({
-              command: "urlResolved",
-              url: message.url || currentState.url,
-              resolvedUrl: resolved.toString(),
-            });
-          } catch (error) {
-            const text = error instanceof Error ? error.message : String(error);
-            void vscode.window.showErrorMessage(
-              `Open Preview: ${text}`,
-            );
-          }
-        }
-      });
+      try {
+        render(currentState.url);
+      } catch (error) {
+        const text = error instanceof Error ? error.message : String(error);
+        void vscode.window.showErrorMessage(`Open Preview: ${text}`);
+      }
 
       panel.onDidDispose(() => {
         currentPanel = undefined;
       });
-    });
+
+      panel.webview.onDidReceiveMessage((message) => {
+        if (!message || message.command !== "loadUrl") {
+          return;
+        }
+        currentState.url = normalizeUrl(message.url || currentState.url);
+      });
+    },
+  );
 
   const previewViewProvider = vscode.window.registerWebviewViewProvider(
     "mobile-preview-view",
@@ -412,9 +416,9 @@ function getDeviceMarkup() {
   }).join("");
 }
 
-function getHtml(targetUrl, iframeUrl) {
+function getHtml(targetUrl) {
   const safeTarget = escapeHtml(targetUrl);
-  const safeFrame = escapeHtml(iframeUrl);
+  const safeJsUrl = escapeJs(targetUrl);
   const catalogJson = JSON.stringify(DEVICE_GROUPS);
 
   return `<!DOCTYPE html>
@@ -441,7 +445,6 @@ function getHtml(targetUrl, iframeUrl) {
       --camera-height: 34px;
       --device-scale: 1;
       --phone-finish: linear-gradient(180deg, #0f1013 0%, #050507 100%);
-      --glow-color: rgba(0, 122, 255, 0.15);
     }
 
     * { box-sizing: border-box; }
@@ -451,28 +454,14 @@ function getHtml(targetUrl, iframeUrl) {
       width: 100%;
       height: 100vh;
       overflow: hidden;
-      background: #070708;
+      background: #0a0a0a;
     }
 
     body {
       display: grid;
       grid-template-rows: auto 1fr;
       color: var(--text);
-      font: 13px/1.4 -apple-system, "Segoe UI", system-ui, sans-serif;
-      background:
-        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0, 122, 255, 0.06) 0%, transparent 70%),
-        radial-gradient(ellipse 60% 50% at 80% 90%, rgba(0, 122, 255, 0.03) 0%, transparent 60%),
-        #070708;
-    }
-
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 60% 40% at 20% 50%, rgba(255,255,255,0.015) 0%, transparent 60%);
-      pointer-events: none;
-      z-index: -1;
+      font: 13px/1.4 "Segoe UI", sans-serif;
     }
 
     button, select, input { font: inherit; }
@@ -486,45 +475,6 @@ function getHtml(targetUrl, iframeUrl) {
       display: flex;
       align-items: center;
       gap: 0;
-      position: relative;
-      z-index: 10;
-      background: rgba(10, 10, 12, 0.72);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-
-    .toolbar::after {
-      content: "";
-      position: absolute;
-      bottom: -1px;
-      left: 10%;
-      right: 10%;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(0, 122, 255, 0.2), transparent);
-      pointer-events: none;
-    }
-
-    .toolbar-brand {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 0 12px 0 16px;
-      flex-shrink: 0;
-      opacity: 0.6;
-    }
-
-    .toolbar-brand svg {
-      width: 18px;
-      height: 18px;
-    }
-
-    .toolbar-brand span {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.3px;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.5);
     }
 
     .select-shell {
@@ -538,16 +488,15 @@ function getHtml(targetUrl, iframeUrl) {
     .select-shell::after {
       content: "";
       position: absolute;
-      right: 16px;
+      right: 18px;
       top: 50%;
-      width: 8px;
-      height: 8px;
-      margin-top: -6px;
-      border-right: 1.5px solid rgba(255,255,255,0.5);
-      border-bottom: 1.5px solid rgba(255,255,255,0.5);
+      width: 10px;
+      height: 10px;
+      margin-top: -7px;
+      border-right: 2px solid rgba(255,255,255,0.66);
+      border-bottom: 2px solid rgba(255,255,255,0.66);
       transform: rotate(45deg);
       pointer-events: none;
-      transition: transform 0.2s ease;
     }
 
     .device-picker,
@@ -556,37 +505,18 @@ function getHtml(targetUrl, iframeUrl) {
       width: 100%;
       height: 48px;
       box-sizing: border-box;
-      padding: 0 40px 0 4px;
+      padding: 0 46px 0 18px;
       margin: 0;
       border-radius: 0;
       border: 0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
       color: var(--text);
       outline: none;
       appearance: none;
-      background: transparent;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-    }
-
-    .device-select optgroup {
-      background: #141416;
-      color: rgba(255,255,255,0.4);
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      padding: 4px 0;
-    }
-
-    .device-select option {
-      background: #1a1a1e;
-      color: var(--text);
-      font-size: 13px;
-      font-weight: 400;
-      text-transform: none;
-      letter-spacing: 0;
-      padding: 6px 10px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01)),
+        #111214;
+      box-shadow: inset 0 -1px 0 rgba(255,255,255,0.03);
     }
 
     .preview-container,
@@ -609,23 +539,7 @@ function getHtml(targetUrl, iframeUrl) {
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1), height 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-      will-change: transform;
-    }
-
-    .phone-viewport::before {
-      content: "";
-      position: absolute;
-      inset: -30px;
-      border-radius: 50%;
-      background: radial-gradient(circle at center, var(--glow-color) 0%, transparent 70%);
-      opacity: 0;
-      transition: opacity 0.6s ease;
-      pointer-events: none;
-    }
-
-    .phone-viewport.has-glow::before {
-      opacity: 1;
+      transition: width 0.3s ease, height 0.3s ease;
     }
 
     .phone-scale,
@@ -635,8 +549,7 @@ function getHtml(targetUrl, iframeUrl) {
       display: grid;
       place-items: center;
       transform-origin: center center;
-      transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-      contain: layout style;
+      transition: transform 0.3s ease;
     }
 
     .phone {
@@ -645,15 +558,12 @@ function getHtml(targetUrl, iframeUrl) {
       height: calc(var(--screen-height) + 36px);
       padding: 15px;
       border-radius: 54px;
-      background: linear-gradient(135deg, #2a2a2e 0%, #1c1c1e 40%, #1a1a1c 100%);
+      border: 1px solid #3a3a3a;
+      background: #1c1c1e;
       box-shadow:
-        0 0 0 0.5px rgba(255,255,255,0.06),
-        0 0 0 1px rgba(0, 0, 0, 0.5),
-        0 2px 0 0 rgba(255,255,255,0.03) inset,
-        0 30px 80px rgba(0,0,0,0.7),
-        0 8px 32px rgba(0,0,0,0.4);
-      transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-      contain: layout style;
+        0 0 0 1px rgba(255,255,255,0.04),
+        0 30px 80px rgba(0,0,0,0.8);
+      transition: all 0.3s ease;
     }
 
     .phone::before {
@@ -664,20 +574,8 @@ function getHtml(targetUrl, iframeUrl) {
       background: #000;
       border: 1px solid rgba(255,255,255,0.03);
       box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.03),
-        inset 0 -10px 20px rgba(0,0,0,0.3);
-      pointer-events: none;
-    }
-
-    .phone::after {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 30%;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+        inset 0 1px 0 rgba(255,255,255,0.02),
+        inset 0 -10px 20px rgba(0,0,0,0.24);
       pointer-events: none;
     }
 
@@ -686,12 +584,6 @@ function getHtml(targetUrl, iframeUrl) {
       height: calc(var(--screen-height) + 34px);
       padding: 14px;
       border-radius: 40px;
-      box-shadow:
-        0 0 0 0.5px rgba(255,255,255,0.06),
-        0 0 0 1px rgba(0, 0, 0, 0.5),
-        0 2px 0 0 rgba(255,255,255,0.03) inset,
-        0 25px 60px rgba(0,0,0,0.6),
-        0 6px 24px rgba(0,0,0,0.3);
     }
 
     .phone.tablet::before {
@@ -701,28 +593,24 @@ function getHtml(targetUrl, iframeUrl) {
 
     .hardware-button {
       position: absolute;
-      z-index: -1;
-      background: linear-gradient(180deg, #343438, #222226);
+      background: #2a2a2a;
       box-shadow:
         inset 0 1px 0 rgba(255,255,255,0.08),
-        0 2px 6px rgba(0,0,0,0.5);
+        0 2px 6px rgba(0,0,0,0.32);
       opacity: 0.95;
-      transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-      border: 0.5px solid rgba(0,0,0,0.3);
+      transition: all 0.3s ease;
     }
 
     .hardware-button.left {
       left: -6px;
       width: 4px;
-      border-radius: 3px 0 0 3px;
-      border-right: none;
+      border-radius: 2px 0 0 2px;
     }
 
     .hardware-button.right {
       right: -6px;
       width: 4px;
-      border-radius: 0 3px 3px 0;
-      border-left: none;
+      border-radius: 0 2px 2px 0;
     }
 
     .hardware-button.volume-up {
@@ -748,14 +636,15 @@ function getHtml(targetUrl, iframeUrl) {
       position: relative;
       width: var(--screen-width);
       height: var(--screen-height);
-      border-radius: var(--screen-radius);
+      border-radius: 44px;
       overflow: hidden;
       background: #000;
       isolation: isolate;
       display: flex;
       flex-direction: column;
-      transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-      contain: layout style;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.02);
+      transition: all 0.3s ease;
     }
 
     .camera {
@@ -765,77 +654,49 @@ function getHtml(targetUrl, iframeUrl) {
       z-index: 99999;
       transform: translateX(-50%);
       pointer-events: none;
-      transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+      transition: all 0.3s ease;
     }
 
     .camera.island {
       width: 126px;
       height: 37px;
       border-radius: 20px;
-      background: linear-gradient(180deg, #0d0d0f 0%, #050507 100%);
-      box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.06);
-    }
-
-    .camera.island::before {
-      content: "";
-      position: absolute;
-      top: 50%;
-      left: 20px;
-      transform: translateY(-50%);
-      width: 38px;
-      height: 7px;
-      border-radius: 999px;
-      background: rgba(30,30,32,0.95);
-      box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.04);
-    }
-
-    .camera.island::after {
-      content: "";
-      position: absolute;
-      top: 50%;
-      right: 24px;
-      transform: translateY(-50%);
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 30%, rgba(40,40,50,0.9), rgba(12,12,14,0.96));
-      box-shadow:
-        0 0 0 2.5px rgba(10,10,12,0.5),
-        0 0 0 4px rgba(6,6,8,0.3);
+      background: #000;
     }
 
     .camera.notch {
       width: 176px;
       height: 34px;
       border-radius: 0 0 22px 22px;
-      background: linear-gradient(180deg, #0d0d0f 0%, #050507 100%);
+      background: #000;
     }
 
-    .camera.notch::before {
+    .camera.notch::before,
+    .camera.notch::after,
+    .camera.island::before,
+    .camera.island::after {
       content: "";
       position: absolute;
       top: 50%;
-      left: 20px;
       transform: translateY(-50%);
+      border-radius: 999px;
+    }
+
+    .camera.notch::before,
+    .camera.island::before {
+      left: 18px;
       width: 42px;
       height: 8px;
-      border-radius: 999px;
-      background: rgba(30,30,32,0.95);
+      background: rgba(30,30,30,0.95);
     }
 
-    .camera.notch::after {
-      content: "";
-      position: absolute;
-      top: 50%;
-      right: 24px;
-      transform: translateY(-50%);
+    .camera.notch::after,
+    .camera.island::after {
+      right: 22px;
       width: 10px;
       height: 10px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 30%, rgba(40,40,50,0.9), rgba(12,12,14,0.96));
-      box-shadow:
-        0 0 0 2.5px rgba(10,10,12,0.5),
-        0 0 0 4px rgba(6,6,8,0.3);
+      background: rgba(26,26,28,0.96);
+      box-shadow: 0 0 0 3px rgba(12,12,14,0.55);
     }
 
     .camera.punch {
@@ -844,10 +705,8 @@ function getHtml(targetUrl, iframeUrl) {
       height: 18px;
       border-radius: 50%;
       background:
-        radial-gradient(circle at 35% 35%, rgba(66,66,80,0.95), rgba(8,8,10,0.98) 60%);
-      box-shadow:
-        0 0 0 3px rgba(0,0,0,0.45),
-        inset 0 0.5px 0 rgba(255,255,255,0.04);
+        radial-gradient(circle at 35% 35%, rgba(66,66,74,0.95), rgba(8,8,10,0.98) 60%);
+      box-shadow: 0 0 0 4px rgba(0,0,0,0.45);
     }
 
     .camera.tablet {
@@ -856,7 +715,6 @@ function getHtml(targetUrl, iframeUrl) {
       height: 8px;
       border-radius: 999px;
       background: rgba(0,0,0,0.72);
-      box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.03);
     }
 
     .statusbar {
@@ -868,7 +726,7 @@ function getHtml(targetUrl, iframeUrl) {
       display: flex;
       align-items: flex-end;
       justify-content: space-between;
-      padding: 0 24px 8px;
+      padding: 0 20px 8px;
       color: white;
       font-size: 12px;
       font-weight: 700;
@@ -876,7 +734,7 @@ function getHtml(targetUrl, iframeUrl) {
       pointer-events: none;
       background: linear-gradient(
         to bottom,
-        rgba(0,0,0,0.6) 0%,
+        rgba(0,0,0,0.7) 0%,
         transparent 100%
       );
     }
@@ -884,12 +742,11 @@ function getHtml(targetUrl, iframeUrl) {
     .status-time {
       font-size: 15px;
       font-weight: 700;
-      letter-spacing: 0.2px;
-      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.3px;
     }
 
     .statusbar.right-offset {
-      padding-right: 28px;
+      padding-right: 20px;
     }
 
     .status-icons {
@@ -899,47 +756,76 @@ function getHtml(targetUrl, iframeUrl) {
       font-size: 13px;
     }
 
-    .signal-bars {
-      display: flex;
-      align-items: flex-end;
-      gap: 1.5px;
-      height: 12px;
-    }
-
-    .signal-bar {
-      width: 3px;
-      background: white;
-      border-radius: 1px 1px 0 0;
+    .signal {
+      width: 0;
+      height: 0;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-left: 8px solid white;
       opacity: 0.95;
     }
 
-    .signal-bar:nth-child(1) { height: 3px; }
-    .signal-bar:nth-child(2) { height: 5px; }
-    .signal-bar:nth-child(3) { height: 8px; }
-    .signal-bar:nth-child(4) { height: 10px; }
-
-    .wifi-icon {
+    .wifi {
       position: relative;
-      width: 15px;
+      width: 16px;
       height: 11px;
+      border-top: 2px solid white;
+      border-left: 2px solid transparent;
+      border-right: 2px solid transparent;
+      border-radius: 14px 14px 0 0;
       opacity: 0.92;
     }
 
-    .wifi-icon svg {
-      width: 100%;
-      height: 100%;
+    .wifi::before,
+    .wifi::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      border-top: 2px solid white;
+      border-left: 2px solid transparent;
+      border-right: 2px solid transparent;
+      border-radius: 14px 14px 0 0;
     }
 
-    .battery-icon {
+    .wifi::before {
+      top: 3px;
+      width: 10px;
+      height: 5px;
+    }
+
+    .wifi::after {
+      top: 6px;
+      width: 4px;
+      height: 2px;
+    }
+
+    .battery {
       position: relative;
-      width: 25px;
+      width: 24px;
       height: 12px;
-      opacity: 0.92;
+      border: 1.8px solid white;
+      border-radius: 4px;
     }
 
-    .battery-icon svg {
-      width: 100%;
-      height: 100%;
+    .battery::before {
+      content: "";
+      position: absolute;
+      top: 3px;
+      right: -4px;
+      width: 2px;
+      height: 6px;
+      border-radius: 1px;
+      background: white;
+    }
+
+    .battery::after {
+      content: "";
+      position: absolute;
+      inset: 2px;
+      width: 68%;
+      border-radius: 2px;
+      background: white;
     }
 
     .webview-frame {
@@ -966,29 +852,23 @@ function getHtml(targetUrl, iframeUrl) {
 
     .address-bar {
       width: 100%;
-      height: 36px;
+      height: 38px;
       border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
       padding: 0 16px;
       font-size: 12px;
       text-align: center;
-      color: rgba(255,255,255,0.92);
+      color: white;
       outline: none;
-      background: rgba(22, 22, 26, 0.82);
-      backdrop-filter: blur(24px) saturate(1.4);
-      -webkit-backdrop-filter: blur(24px) saturate(1.4);
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      background: rgba(30,30,30,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
       pointer-events: auto;
-      letter-spacing: 0.2px;
-    }
-
-    .address-bar:focus {
-      border-color: rgba(0, 122, 255, 0.5);
-      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
     }
 
     .address-bar::placeholder {
-      color: rgba(255,255,255,0.4);
+      color: rgba(255,255,255,0.62);
     }
 
     .home-indicator {
@@ -999,44 +879,31 @@ function getHtml(targetUrl, iframeUrl) {
       height: 5px;
       transform: translateX(-50%);
       border-radius: 999px;
-      background: rgba(255,255,255,0.85);
+      background: rgba(255,255,255,0.9);
       z-index: 999999;
       pointer-events: none;
-      animation: homePulse 3s ease-in-out infinite;
     }
 
     .home-indicator.hidden {
       display: none;
     }
 
-    @keyframes homePulse {
-      0%, 100% { opacity: 0.85; }
-      50% { opacity: 0.65; }
-    }
-
     @media (max-width: 640px) {
       .toolbar {
-        padding: 0;
+        padding: 8px 12px;
       }
     }
   </style>
 </head>
 <body>
   <header class="toolbar">
-    <div class="toolbar-brand">
-      <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="5" y="2" width="14" height="20" rx="2.5" />
-        <line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/>
-      </svg>
-      <span>Preview</span>
-    </div>
     <div class="select-shell">
       <select id="deviceSelect" class="device-picker device-select">${getDeviceMarkup()}</select>
     </div>
   </header>
 
   <main class="preview-container preview-area">
-    <div id="phoneViewport" class="phone-viewport has-glow">
+    <div id="phoneViewport" class="phone-viewport">
       <div id="phoneScale" class="phone-scale phone-frame-wrapper">
         <div id="phone" class="phone">
           <span id="volumeUp" class="hardware-button left volume-up"></span>
@@ -1048,34 +915,16 @@ function getHtml(targetUrl, iframeUrl) {
             <div id="statusbar" class="statusbar">
               <span class="status-time">9:41</span>
               <span class="status-icons">
-                <span class="signal-bars">
-                  <span class="signal-bar"></span>
-                  <span class="signal-bar"></span>
-                  <span class="signal-bar"></span>
-                  <span class="signal-bar"></span>
-                </span>
-                <span class="wifi-icon">
-                  <svg viewBox="0 0 18 14" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round">
-                    <path d="M1 5.5c4-3.3 12-3.3 16 0" opacity="0.4"/>
-                    <path d="M4 8.5c3-2 8-2 11 0" opacity="0.6"/>
-                    <path d="M7 11.5c2-1 5-1 7 0"/>
-                    <circle cx="9.5" cy="13" r="1" fill="white" stroke="none"/>
-                  </svg>
-                </span>
-                <span class="battery-icon">
-                  <svg viewBox="0 0 28 14" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="0.5" y="0.5" width="23" height="13" rx="2.5" opacity="0.95"/>
-                    <rect x="24" y="4" width="3" height="6" rx="1" opacity="0.5"/>
-                    <rect x="3" y="3" width="14" height="8" rx="1.5" fill="white" opacity="0.95"/>
-                  </svg>
-                </span>
+                <span class="signal"></span>
+                <span class="wifi"></span>
+                <span class="battery"></span>
               </span>
             </div>
 
             <iframe
               id="previewFrame"
               class="webview-frame"
-              src="${safeFrame}"
+              src="${safeTarget}"
               title="Mobile Preview"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
             ></iframe>
@@ -1113,8 +962,7 @@ function getHtml(targetUrl, iframeUrl) {
     const volumeUp = document.getElementById("volumeUp");
     const volumeDown = document.getElementById("volumeDown");
     const powerButton = document.getElementById("powerButton");
-    const iframe = document.getElementById("previewFrame");
-    urlInput.dataset.fullUrl = "${safeTarget}";
+    urlInput.dataset.fullUrl = "${safeJsUrl}";
 
     function isDynamicIslandDevice(definition) {
       return definition.os === "ios" && /^iphone-(14|15|16|17)/.test(definition.id);
@@ -1129,9 +977,9 @@ function getHtml(targetUrl, iframeUrl) {
       const normalized = normalizeUrl(value);
       try {
         const parsed = new URL(normalized);
-        return parsed.host || normalized.replace(/^https?:\/\//i, "");
+        return parsed.host || normalized.replace(/^https?:\\/\\//i, "");
       } catch {
-        return normalized.replace(/^https?:\/\//i, "");
+        return normalized.replace(/^https?:\\/\\//i, "");
       }
     }
 
@@ -1143,10 +991,10 @@ function getHtml(targetUrl, iframeUrl) {
 
     function normalizeUrl(value) {
       const input = String(value || "").trim();
-      if (!input) return "${safeTarget}";
-      if (/^\d+$/.test(input)) return "http://localhost:" + input;
-      if (/^:\d+$/.test(input)) return "http://localhost" + input;
-      if (!/^https?:\/\//i.test(input)) return "http://" + input;
+      if (!input) return "${safeJsUrl}";
+      if (/^\\d+$/.test(input)) return "http://localhost:" + input;
+      if (/^:\\d+$/.test(input)) return "http://localhost" + input;
+      if (!/^https?:\\/\\//i.test(input)) return "http://" + input;
       return input;
     }
 
@@ -1177,9 +1025,8 @@ function getHtml(targetUrl, iframeUrl) {
       const availH = Math.max(0, previewArea.clientHeight - 32);
       const frameW = phoneScale.offsetWidth;
       const frameH = phoneScale.offsetHeight;
-      if (!frameW || !frameH) return;
-      const scaleX = availW / frameW;
-      const scaleY = availH / frameH;
+      const scaleX = frameW ? availW / frameW : 1;
+      const scaleY = frameH ? availH / frameH : 1;
       const scale = Math.min(scaleX, scaleY, 1);
 
       phoneScale.style.transform = "scale(" + Math.max(scale, 0).toFixed(4) + ")";
@@ -1211,30 +1058,16 @@ function getHtml(targetUrl, iframeUrl) {
       volumeDown.classList.toggle("hidden", definition.family === "tablet");
       powerButton.classList.toggle("hidden", definition.family === "tablet");
 
-      phoneViewport.classList.toggle("has-glow", definition.os === "ios");
-
       requestAnimationFrame(scaleFrame);
     }
 
-    function submitUrl(url) {
-      const normalized = normalizeUrl(url);
-      urlInput.dataset.fullUrl = normalized;
-      urlInput.value = getUrlDisplayValue(normalized);
-      vscode.postMessage({ command: "resolveUrl", url: normalized });
-    }
-
     function submit() {
-      submitUrl(urlInput.value);
+      const url = normalizeUrl(urlInput.value);
+      urlInput.dataset.fullUrl = url;
+      urlInput.value = getUrlDisplayValue(url);
+      document.getElementById("previewFrame").src = url;
+      vscode.postMessage({ command: "loadUrl", url });
     }
-
-    window.addEventListener("message", (event) => {
-      const msg = event.data;
-      if (msg.command === "urlResolved") {
-        urlInput.dataset.fullUrl = msg.url;
-        urlInput.value = getUrlDisplayValue(msg.url);
-        iframe.src = msg.resolvedUrl;
-      }
-    });
 
     deviceSelect.addEventListener("change", () => {
       currentDeviceId = deviceSelect.value;
@@ -1258,11 +1091,7 @@ function getHtml(targetUrl, iframeUrl) {
       urlInput.value = getUrlDisplayValue(fullUrl);
     });
 
-    let resizeTimer;
-    window.addEventListener("resize", () => {
-      if (resizeTimer) cancelAnimationFrame(resizeTimer);
-      resizeTimer = requestAnimationFrame(scaleFrame);
-    });
+    window.addEventListener("resize", scaleFrame);
 
     urlInput.value = getUrlDisplayValue(urlInput.dataset.fullUrl);
     renderDevice();
