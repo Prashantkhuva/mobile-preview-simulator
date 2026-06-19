@@ -4,7 +4,7 @@
   "displayName": "Mobile Preview Simulator",
   "description": "Preview a local web app inside a polished mobile-sized webview.",
    "homepage": "https://github.com/Prashantkhuva/mobile-preview-simulator",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "license": "MIT",
   "keywords": [
     "mobile",
@@ -47,6 +47,28 @@
           "type": "webview"
         }
       ]
+    },
+    "configuration": {
+      "title": "Mobile Preview",
+      "properties": {
+        "mobilePreview.customDevices": {
+          "type": "array",
+          "default": [],
+          "description": "Custom device presets shown in the device picker",
+          "items": {
+            "type": "object",
+            "required": ["name", "width", "height"],
+            "properties": {
+              "name": { "type": "string", "description": "Device name (e.g. 'My Phone')" },
+              "width": { "type": "number", "description": "Screen width in CSS pixels" },
+              "height": { "type": "number", "description": "Screen height in CSS pixels" },
+              "family": { "type": "string", "enum": ["phone", "tablet"], "default": "phone", "description": "Form factor" },
+              "os": { "type": "string", "enum": ["ios", "android"], "default": "android", "description": "OS type" },
+              "chrome": { "type": "string", "enum": ["notch", "island", "punch", "tablet"], "default": "punch", "description": "Camera cutout style" }
+            }
+          }
+        }
+      }
     },
     "commands": [
       {
