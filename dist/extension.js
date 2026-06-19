@@ -1,9 +1,9 @@
 "use strict";
 
 const vscode = require("vscode");
+const os = require("os");
 const { DEFAULT_URL, normalizeUrl } = require("./utils");
 const { getHtml } = require("./template");
-const { mergeCustomDevices } = require("./devices");
 
 const COMMAND = "mobile-preview-simulator.openPreview";
 const VIEW_TYPE = "mobilePreviewSimulator";
@@ -11,10 +11,24 @@ const VIEW_TYPE = "mobilePreviewSimulator";
 let currentPanel;
 let currentState = { url: DEFAULT_URL };
 
+function getLocalIp() {
+  try {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+      for (const iface of interfaces[name]) {
+        if (iface.family === "IPv4" && !iface.internal) {
+          return iface.address;
+        }
+      }
+    }
+  } catch {}
+  return "localhost";
+}
+
 function activate(context) {
   const openPreviewCommand = vscode.commands.registerCommand(
     COMMAND,
-    async () => {
+    () => {
       if (currentPanel) {
         currentPanel.reveal(vscode.ViewColumn.Beside);
         return;
@@ -32,23 +46,17 @@ function activate(context) {
 
       currentPanel = panel;
 
-      const config = vscode.workspace.getConfiguration("mobilePreview");
-      const customDevices = config.get("customDevices") || [];
-      const deviceCatalog = mergeCustomDevices(customDevices);
-
       panel.iconPath = {
         light: vscode.Uri.joinPath(context.extensionUri, "images", "icon.svg"),
-        dark: vscode.Uri.joinPath(
-          context.extensionUri,
-          "images",
-          "icon-dark.svg",
-        ),
+        dark: vscode.Uri.joinPath(context.extensionUri, "images", "icon-dark.svg"),
       };
+
+      const localIp = getLocalIp();
 
       const render = (targetUrl) => {
         const normalized = normalizeUrl(targetUrl);
         currentState.url = normalized;
-        panel.webview.html = getHtml(normalized, deviceCatalog);
+        panel.webview.html = getHtml(normalized, normalized, localIp);
       };
 
       try {
@@ -63,9 +71,7 @@ function activate(context) {
       });
 
       panel.webview.onDidReceiveMessage((message) => {
-        if (!message || message.command !== "loadUrl") {
-          return;
-        }
+        if (!message || message.command !== "loadUrl") return;
         currentState.url = normalizeUrl(message.url || currentState.url);
       });
     },

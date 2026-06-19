@@ -1,12 +1,14 @@
 "use strict";
 
 const { escapeHtml, escapeJs } = require("./utils");
-const { getDeviceMarkup } = require("./devices");
+const { DEVICE_GROUPS, getDeviceMarkup } = require("./devices");
 
-function getHtml(targetUrl, deviceCatalog) {
+function getHtml(targetUrl, iframeUrl, localIp) {
   const safeTarget = escapeHtml(targetUrl);
+  const safeFrame = escapeHtml(iframeUrl || targetUrl);
   const safeJsUrl = escapeJs(targetUrl);
-  const catalog = deviceCatalog || [];
+  const safeIp = escapeJs(localIp || "localhost");
+  const catalog = DEVICE_GROUPS;
   const catalogJson = JSON.stringify(catalog);
   const selectMarkup = getDeviceMarkup(catalog);
 
@@ -32,8 +34,7 @@ function getHtml(targetUrl, deviceCatalog) {
       --camera-width: 126px;
       --camera-height: 34px;
       --device-scale: 1;
-      --phone-finish: #1c1c1e;
-      --phone-border: #3a3a3a;
+      --glow-color: rgba(0, 122, 255, 0.15);
     }
 
     * { box-sizing: border-box; }
@@ -43,14 +44,18 @@ function getHtml(targetUrl, deviceCatalog) {
       width: 100%;
       height: 100vh;
       overflow: hidden;
-      background: #0a0a0a;
+      background: #070708;
     }
 
     body {
       display: grid;
       grid-template-rows: auto 1fr;
       color: var(--text);
-      font: 13px/1.4 "Segoe UI", sans-serif;
+      font: 13px/1.4 -apple-system, "Segoe UI", system-ui, sans-serif;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0, 122, 255, 0.06) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 50% at 80% 90%, rgba(0, 122, 255, 0.03) 0%, transparent 60%),
+        #070708;
     }
 
     button, select, input { font: inherit; }
@@ -58,154 +63,101 @@ function getHtml(targetUrl, deviceCatalog) {
     .toolbar {
       width: 100%;
       min-height: 48px;
+      box-sizing: border-box;
+      padding: 0;
+      margin: 0;
       display: flex;
       align-items: center;
-      gap: 2px;
-      background: rgba(14,14,16,0.92);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
+      gap: 0;
+      position: relative;
+      z-index: 10;
+      background: rgba(10, 10, 12, 0.72);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .toolbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 12px 0 16px;
+      flex-shrink: 0;
+      opacity: 0.6;
+    }
+
+    .toolbar-brand svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .toolbar-brand span {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
     }
 
     .select-shell {
       position: relative;
       flex: 1;
+      width: 100%;
       min-width: 0;
-      height: 48px;
+      margin: 0;
     }
 
     .select-shell::after {
       content: "";
       position: absolute;
-      right: 18px;
+      right: 16px;
       top: 50%;
-      width: 10px;
-      height: 10px;
-      margin-top: -7px;
-      border-right: 2px solid rgba(255,255,255,0.66);
-      border-bottom: 2px solid rgba(255,255,255,0.66);
+      width: 8px;
+      height: 8px;
+      margin-top: -6px;
+      border-right: 1.5px solid rgba(255,255,255,0.5);
+      border-bottom: 1.5px solid rgba(255,255,255,0.5);
       transform: rotate(45deg);
       pointer-events: none;
     }
 
-    .device-picker {
+    .device-picker,
+    .device-select {
+      flex: 1;
       width: 100%;
       height: 48px;
-      padding: 0 46px 0 18px;
+      box-sizing: border-box;
+      padding: 0 40px 0 4px;
+      margin: 0;
+      border-radius: 0;
       border: 0;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
       color: var(--text);
       outline: none;
       appearance: none;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01)),
-        #111214;
-      box-shadow: inset 0 -1px 0 rgba(255,255,255,0.03);
-      font-size: 13px;
-      cursor: pointer;
-    }
-    .device-picker option,
-    .device-picker optgroup {
-      background: #111214;
-      color: var(--text);
-    }
-
-    .tb-group {
-      display: flex;
-      align-items: center;
-      gap: 2px;
-      padding: 0 6px;
-      height: 48px;
-      border-left: 1px solid rgba(255,255,255,0.08);
-    }
-
-    .tb-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-      border: none;
-      border-radius: 6px;
       background: transparent;
-      color: rgba(255,255,255,0.55);
+      font-size: 13px;
+      font-weight: 500;
       cursor: pointer;
-      transition: all 0.12s ease;
-      font-size: 16px;
     }
-    .tb-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
-    .tb-btn:active { transform: scale(0.92); }
-    .tb-btn.active { color: #6ea8fe; background: rgba(110,168,254,0.12); }
-    .tb-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; display: block; }
 
-    .zoom-label {
-      min-width: 36px;
-      text-align: center;
+    .device-select optgroup {
+      background: #141416;
+      color: rgba(255,255,255,0.4);
       font-size: 11px;
       font-weight: 600;
-      color: rgba(255,255,255,0.45);
-      font-variant-numeric: tabular-nums;
-      cursor: pointer;
-      transition: color 0.15s;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 4px 0;
     }
-    .zoom-label:hover { color: rgba(255,255,255,0.8); }
 
-    .frame-colors {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    .color-dot {
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      border: 2px solid transparent;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      flex-shrink: 0;
-    }
-    .color-dot:hover { transform: scale(1.18); }
-    .color-dot.active { border-color: rgba(255,255,255,0.6); box-shadow: 0 0 0 1px rgba(255,255,255,0.15); }
-
-    .qr-wrap { position: relative; }
-
-    .qr-popover {
-      position: absolute;
-      bottom: 44px;
-      right: 0;
-      background: rgba(22,22,26,0.96);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 12px;
-      padding: 10px;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.6);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s ease, transform 0.2s ease;
-      transform: translateY(4px);
-      z-index: 999999;
-    }
-    .qr-popover.open {
-      opacity: 1;
-      pointer-events: auto;
-      transform: translateY(0);
-    }
-    .qr-popover img {
-      display: block;
-      width: 110px;
-      height: 110px;
-      border-radius: 6px;
-    }
-    .qr-popover-label {
-      text-align: center;
-      font-size: 10px;
-      color: rgba(255,255,255,0.4);
-      margin-top: 5px;
-      max-width: 110px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    .device-select option {
+      background: #1a1a1e;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      padding: 6px 10px;
     }
 
     .preview-container,
@@ -223,37 +175,35 @@ function getHtml(targetUrl, deviceCatalog) {
 
     .phone-viewport {
       position: relative;
-      width: 447px;
-      height: 918px;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: width 0.3s ease, height 0.3s ease;
+      transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1), height 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+      will-change: transform;
     }
 
     .phone-scale,
     .phone-frame-wrapper {
-      width: 447px;
-      height: 918px;
       display: grid;
       place-items: center;
       transform-origin: center center;
+      transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+      contain: layout style;
     }
 
     .phone {
       position: relative;
-      min-width: 400px;
-      min-height: 700px;
-      width: 429px;
-      height: 888px;
       padding: 15px;
       border-radius: 54px;
-      border: 1px solid #3a3a3a;
-      background: #1c1c1e;
+      background: linear-gradient(135deg, #2a2a2e 0%, #1c1c1e 40%, #1a1a1c 100%);
       box-shadow:
-        0 0 0 1px rgba(255,255,255,0.04),
-        0 30px 80px rgba(0,0,0,0.8);
-      transition: all 0.3s ease;
+        0 0 0 0.5px rgba(255,255,255,0.06),
+        0 0 0 1px rgba(0, 0, 0, 0.5),
+        0 2px 0 0 rgba(255,255,255,0.03) inset,
+        0 30px 80px rgba(0,0,0,0.7),
+        0 8px 32px rgba(0,0,0,0.4);
+      transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+      contain: layout style;
     }
 
     .phone::before {
@@ -264,16 +214,20 @@ function getHtml(targetUrl, deviceCatalog) {
       background: #000;
       border: 1px solid rgba(255,255,255,0.03);
       box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.02),
-        inset 0 -10px 20px rgba(0,0,0,0.24);
+        inset 0 1px 0 rgba(255,255,255,0.03),
+        inset 0 -10px 20px rgba(0,0,0,0.3);
       pointer-events: none;
     }
 
     .phone.tablet {
-      width: calc(var(--screen-width, 834px) + 34px);
-      height: calc(var(--screen-height, 1194px) + 34px);
       padding: 14px;
       border-radius: 40px;
+      box-shadow:
+        0 0 0 0.5px rgba(255,255,255,0.06),
+        0 0 0 1px rgba(0, 0, 0, 0.5),
+        0 2px 0 0 rgba(255,255,255,0.03) inset,
+        0 25px 60px rgba(0,0,0,0.6),
+        0 6px 24px rgba(0,0,0,0.3);
     }
 
     .phone.tablet::before {
@@ -283,24 +237,28 @@ function getHtml(targetUrl, deviceCatalog) {
 
     .hardware-button {
       position: absolute;
-      background: #2a2a2a;
+      z-index: -1;
+      background: linear-gradient(180deg, #343438, #222226);
       box-shadow:
         inset 0 1px 0 rgba(255,255,255,0.08),
-        0 2px 6px rgba(0,0,0,0.32);
+        0 2px 6px rgba(0,0,0,0.5);
       opacity: 0.95;
-      transition: all 0.3s ease;
+      transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+      border: 0.5px solid rgba(0,0,0,0.3);
     }
 
     .hardware-button.left {
       left: -6px;
       width: 4px;
-      border-radius: 2px 0 0 2px;
+      border-radius: 3px 0 0 3px;
+      border-right: none;
     }
 
     .hardware-button.right {
       right: -6px;
       width: 4px;
-      border-radius: 0 2px 2px 0;
+      border-radius: 0 3px 3px 0;
+      border-left: none;
     }
 
     .hardware-button.volume-up {
@@ -324,19 +282,14 @@ function getHtml(targetUrl, deviceCatalog) {
 
     .screen-shell {
       position: relative;
-      min-width: 350px;
-      min-height: 700px;
-      width: 393px;
-      height: 852px;
-      border-radius: 44px;
+      border-radius: var(--screen-radius);
       overflow: hidden;
       background: #000;
       isolation: isolate;
       display: flex;
       flex-direction: column;
-      box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,0.02);
-      transition: all 0.3s ease;
+      transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+      contain: layout style;
     }
 
     .camera {
@@ -346,49 +299,72 @@ function getHtml(targetUrl, deviceCatalog) {
       z-index: 99999;
       transform: translateX(-50%);
       pointer-events: none;
-      transition: all 0.3s ease;
+      transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .camera.island {
       width: 126px;
       height: 37px;
       border-radius: 20px;
-      background: #000;
+      background: linear-gradient(180deg, #0d0d0f 0%, #050507 100%);
+      box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.06);
+    }
+
+    .camera.island::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 20px;
+      transform: translateY(-50%);
+      width: 38px;
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(30,30,32,0.95);
+    }
+
+    .camera.island::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: 24px;
+      transform: translateY(-50%);
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, rgba(40,40,50,0.9), rgba(12,12,14,0.96));
+      box-shadow: 0 0 0 2.5px rgba(10,10,12,0.5), 0 0 0 4px rgba(6,6,8,0.3);
     }
 
     .camera.notch {
       width: 176px;
       height: 34px;
       border-radius: 0 0 22px 22px;
-      background: #000;
+      background: #0d0d0f;
     }
 
-    .camera.notch::before,
-    .camera.notch::after,
-    .camera.island::before,
-    .camera.island::after {
+    .camera.notch::before {
       content: "";
       position: absolute;
       top: 50%;
+      left: 20px;
       transform: translateY(-50%);
-      border-radius: 999px;
-    }
-
-    .camera.notch::before,
-    .camera.island::before {
-      left: 18px;
       width: 42px;
       height: 8px;
-      background: rgba(30,30,30,0.95);
+      border-radius: 999px;
+      background: rgba(30,30,32,0.95);
     }
 
-    .camera.notch::after,
-    .camera.island::after {
-      right: 22px;
+    .camera.notch::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: 24px;
+      transform: translateY(-50%);
       width: 10px;
       height: 10px;
-      background: rgba(26,26,28,0.96);
-      box-shadow: 0 0 0 3px rgba(12,12,14,0.55);
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, rgba(40,40,50,0.9), rgba(12,12,14,0.96));
+      box-shadow: 0 0 0 2.5px rgba(10,10,12,0.5), 0 0 0 4px rgba(6,6,8,0.3);
     }
 
     .camera.punch {
@@ -396,9 +372,8 @@ function getHtml(targetUrl, deviceCatalog) {
       width: 18px;
       height: 18px;
       border-radius: 50%;
-      background:
-        radial-gradient(circle at 35% 35%, rgba(66,66,74,0.95), rgba(8,8,10,0.98) 60%);
-      box-shadow: 0 0 0 4px rgba(0,0,0,0.45);
+      background: radial-gradient(circle at 35% 35%, rgba(66,66,80,0.95), rgba(8,8,10,0.98) 60%);
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.45), inset 0 0.5px 0 rgba(255,255,255,0.04);
     }
 
     .camera.tablet {
@@ -418,27 +393,24 @@ function getHtml(targetUrl, deviceCatalog) {
       display: flex;
       align-items: flex-end;
       justify-content: space-between;
-      padding: 0 20px 8px;
+      padding: 0 24px 8px;
       color: white;
       font-size: 12px;
       font-weight: 700;
       z-index: 9999;
       pointer-events: none;
-      background: linear-gradient(
-        to bottom,
-        rgba(0,0,0,0.7) 0%,
-        transparent 100%
-      );
+      background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 100%);
     }
 
     .status-time {
       font-size: 15px;
       font-weight: 700;
-      letter-spacing: -0.3px;
+      letter-spacing: 0.2px;
+      font-variant-numeric: tabular-nums;
     }
 
     .statusbar.right-offset {
-      padding-right: 20px;
+      padding-right: 28px;
     }
 
     .status-icons {
@@ -448,77 +420,42 @@ function getHtml(targetUrl, deviceCatalog) {
       font-size: 13px;
     }
 
-    .signal {
-      width: 0;
-      height: 0;
-      border-top: 5px solid transparent;
-      border-bottom: 5px solid transparent;
-      border-left: 8px solid white;
+    .signal-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 1.5px;
+      height: 12px;
+    }
+
+    .signal-bar {
+      width: 3px;
+      background: white;
+      border-radius: 1px 1px 0 0;
       opacity: 0.95;
     }
 
-    .wifi {
+    .signal-bar:nth-child(1) { height: 3px; }
+    .signal-bar:nth-child(2) { height: 5px; }
+    .signal-bar:nth-child(3) { height: 8px; }
+    .signal-bar:nth-child(4) { height: 10px; }
+
+    .wifi-icon {
       position: relative;
-      width: 16px;
+      width: 15px;
       height: 11px;
-      border-top: 2px solid white;
-      border-left: 2px solid transparent;
-      border-right: 2px solid transparent;
-      border-radius: 14px 14px 0 0;
       opacity: 0.92;
     }
 
-    .wifi::before,
-    .wifi::after {
-      content: "";
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      border-top: 2px solid white;
-      border-left: 2px solid transparent;
-      border-right: 2px solid transparent;
-      border-radius: 14px 14px 0 0;
-    }
+    .wifi-icon svg { width: 100%; height: 100%; }
 
-    .wifi::before {
-      top: 3px;
-      width: 10px;
-      height: 5px;
-    }
-
-    .wifi::after {
-      top: 6px;
-      width: 4px;
-      height: 2px;
-    }
-
-    .battery {
+    .battery-icon {
       position: relative;
-      width: 24px;
+      width: 25px;
       height: 12px;
-      border: 1.8px solid white;
-      border-radius: 4px;
+      opacity: 0.92;
     }
 
-    .battery::before {
-      content: "";
-      position: absolute;
-      top: 3px;
-      right: -4px;
-      width: 2px;
-      height: 6px;
-      border-radius: 1px;
-      background: white;
-    }
-
-    .battery::after {
-      content: "";
-      position: absolute;
-      inset: 2px;
-      width: 68%;
-      border-radius: 2px;
-      background: white;
-    }
+    .battery-icon svg { width: 100%; height: 100%; }
 
     .webview-frame {
       position: absolute;
@@ -544,27 +481,28 @@ function getHtml(targetUrl, deviceCatalog) {
 
     .address-bar {
       width: 100%;
-      height: 38px;
+      height: 36px;
       border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.25);
+      border: 1px solid rgba(255,255,255,0.15);
       padding: 0 16px;
       font-size: 12px;
       text-align: center;
-      color: white;
+      color: rgba(255,255,255,0.92);
       outline: none;
-      background: rgba(30,30,30,0.85);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
-      transition: border-color 0.2s;
+      background: rgba(22, 22, 26, 0.82);
+      backdrop-filter: blur(24px) saturate(1.4);
+      -webkit-backdrop-filter: blur(24px) saturate(1.4);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      letter-spacing: 0.2px;
     }
 
     .address-bar:focus {
-      border-color: rgba(110,168,254,0.5);
+      border-color: rgba(0, 122, 255, 0.5);
+      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
     }
 
     .address-bar::placeholder {
-      color: rgba(255,255,255,0.62);
+      color: rgba(255,255,255,0.4);
     }
 
     .home-indicator {
@@ -575,7 +513,7 @@ function getHtml(targetUrl, deviceCatalog) {
       height: 5px;
       transform: translateX(-50%);
       border-radius: 999px;
-      background: rgba(255,255,255,0.9);
+      background: rgba(255,255,255,0.85);
       z-index: 999999;
       pointer-events: none;
     }
@@ -584,18 +522,74 @@ function getHtml(targetUrl, deviceCatalog) {
       display: none;
     }
 
-    .frame-overlay {
-      position: absolute;
-      top: 50px;
-      left: 0;
-      right: 0;
-      bottom: 34px;
-      z-index: 50;
+    .toolbar-actions {
       display: flex;
       align-items: center;
+      gap: 0;
+      padding: 0 4px;
+      flex-shrink: 0;
+    }
+
+    .toolbar-btn {
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: transparent;
+      color: rgba(255,255,255,0.5);
+      cursor: pointer;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      transition: all 0.2s ease;
+      padding: 0;
+      position: relative;
+    }
+
+    .toolbar-btn:hover {
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.85);
+    }
+
+    .toolbar-btn:active {
+      background: rgba(255,255,255,0.12);
+      transform: scale(0.92);
+    }
+
+    .toolbar-btn.active {
+      color: rgba(0, 122, 255, 0.9);
+    }
+
+    .toolbar-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .toolbar-btn .badge {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      font-size: 9px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.7);
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      padding: 1px 4px;
+      line-height: 1;
+    }
+
+    .frame-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 100000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       justify-content: center;
-      background: #1c1c1e;
-      transition: opacity 0.25s ease;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: opacity 0.3s ease;
+      border-radius: inherit;
     }
 
     .frame-overlay.hidden {
@@ -603,114 +597,173 @@ function getHtml(targetUrl, deviceCatalog) {
       pointer-events: none;
     }
 
-    .frame-overlay-content {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      text-align: center;
-      padding: 24px;
-      max-width: 280px;
-    }
-
-    .frame-overlay-content .spinner {
+    .frame-overlay .spinner {
       width: 28px;
       height: 28px;
-      border: 3px solid rgba(255,255,255,0.08);
-      border-top-color: #aaa;
+      border: 2.5px solid rgba(255,255,255,0.12);
+      border-top-color: rgba(255,255,255,0.7);
       border-radius: 50%;
-      animation: fspin 0.7s linear infinite;
+      animation: spin 0.7s linear infinite;
+      margin-bottom: 12px;
     }
 
-    @keyframes fspin {
+    .frame-overlay .icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255,68,68,0.2);
+      color: #ff4444;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .frame-overlay .icon.hidden {
+      display: none;
+    }
+
+    .frame-overlay .msg {
+      color: rgba(255,255,255,0.85);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .frame-overlay .sub {
+      color: rgba(255,255,255,0.4);
+      font-size: 11px;
+      margin-top: 4px;
+      max-width: 80%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    @keyframes spin {
       to { transform: rotate(360deg); }
     }
 
-    .frame-overlay-content .icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.05);
+    .qr-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999999;
       display: flex;
       align-items: center;
       justify-content: center;
-      font: 16px/1 sans-serif;
-      color: rgba(255,255,255,0.4);
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
     }
 
-    .frame-overlay-content .msg {
-      font-size: 13px;
-      color: rgba(255,255,255,0.8);
-      line-height: 1.4;
+    .qr-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
     }
 
-    .frame-overlay-content .sub {
-      font-size: 11px;
-      color: rgba(255,255,255,0.4);
-      word-break: break-all;
+    .qr-card {
+      background: #1a1a1e;
+      border-radius: 16px;
+      padding: 24px 32px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.06);
     }
 
-    .frame-overlay-content .rbtn {
-      margin-top: 4px;
-      padding: 6px 20px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.2);
-      background: transparent;
-      color: rgba(255,255,255,0.6);
+    .qr-card img {
+      width: 200px;
+      height: 200px;
+      border-radius: 8px;
+      display: block;
+      margin: 0 auto 16px;
+    }
+
+    .qr-card .qr-url {
+      color: rgba(255,255,255,0.5);
       font-size: 12px;
-      cursor: pointer;
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-bottom: 16px;
     }
 
-    .frame-overlay-content .rbtn:hover {
+    .qr-card .qr-close {
       background: rgba(255,255,255,0.08);
+      border: none;
+      color: rgba(255,255,255,0.7);
+      padding: 8px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s ease;
     }
 
-    .frame-overlay.hidden .spinner {
-      animation-play-state: paused;
+    .qr-card .qr-note {
+      color: rgba(255,255,255,0.3);
+      font-size: 11px;
+      text-align: center;
+      max-width: 240px;
+      line-height: 1.4;
+      margin: -8px 0 16px;
     }
 
-    @media (max-width: 640px) {
-      .toolbar {
-        padding: 0 4px;
-      }
+    .qr-card .qr-close:hover {
+      background: rgba(255,255,255,0.14);
+      color: white;
     }
   </style>
 </head>
 <body>
   <header class="toolbar">
+    <div class="toolbar-brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="5" y="2" width="14" height="20" rx="2.5" />
+        <line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/>
+      </svg>
+      <span>Preview</span>
+    </div>
     <div class="select-shell">
-      <select id="deviceSelect" class="device-picker">${selectMarkup}</select>
+      <select id="deviceSelect" class="device-picker device-select">${selectMarkup}</select>
     </div>
-
-    <div class="tb-group">
-      <button id="rotateBtn" class="tb-btn" title="Rotate device">
-        <svg viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+    <div class="toolbar-actions">
+      <button id="rotateBtn" class="toolbar-btn" title="Rotate">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 4v6h6"/>
+          <path d="M3.5 15.5a9 9 0 1 0 2.1-11.2L1 10"/>
+        </svg>
       </button>
-    </div>
-
-    <div class="tb-group">
-      <button id="zoomOutBtn" class="tb-btn" title="Zoom out">\u2212</button>
-      <span id="zoomLabel" class="zoom-label" title="Reset zoom">100%</span>
-      <button id="zoomInBtn" class="tb-btn" title="Zoom in">+</button>
-    </div>
-
-    <div class="tb-group">
-      <div class="frame-colors" id="frameColors">
-        <span class="color-dot active" style="background:#1c1c1e;border-color:rgba(255,255,255,0.15)" data-finish="#1c1c1e" data-border="#3a3a3a" title="Dark"></span>
-        <span class="color-dot" style="background:#e5e5e7" data-finish="#e5e5e7" data-border="#c7c7cc" title="Silver"></span>
-        <span class="color-dot" style="background:#5b4a6e" data-finish="#5b4a6e" data-border="#7b6a8e" title="Purple"></span>
-        <span class="color-dot" style="background:#c9a96e" data-finish="#c9a96e" data-border="#e0c080" title="Gold"></span>
-      </div>
-    </div>
-
-    <div class="tb-group qr-wrap">
-      <button id="qrBtn" class="tb-btn" title="QR code">
-        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><line x1="3" y1="14" x2="10" y2="14" stroke-width="1.5"/><line x1="3" y1="18" x2="3" y2="21" stroke-width="1.5"/></svg>
+      <button id="zoomOutBtn" class="toolbar-btn" title="Zoom out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <circle cx="11" cy="11" r="7.5"/>
+          <line x1="16.5" y1="16.5" x2="21" y2="21"/>
+          <line x1="7.5" y1="11" x2="14.5" y2="11"/>
+        </svg>
       </button>
-      <div id="qrPopover" class="qr-popover">
-        <img id="qrImg" alt="QR code" />
-        <div id="qrLabel" class="qr-popover-label">Scan</div>
-      </div>
+      <span id="zoomLabel" class="badge" style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.4);min-width:28px;text-align:center;padding:0;">1×</span>
+      <button id="zoomInBtn" class="toolbar-btn" title="Zoom in">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <circle cx="11" cy="11" r="7.5"/>
+          <line x1="16.5" y1="16.5" x2="21" y2="21"/>
+          <line x1="7.5" y1="11" x2="14.5" y2="11"/>
+          <line x1="11" y1="7.5" x2="11" y2="14.5"/>
+        </svg>
+      </button>
+      <button id="qrBtn" class="toolbar-btn" title="QR code">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="2" width="8" height="8" rx="1"/>
+          <rect x="14" y="2" width="8" height="8" rx="1"/>
+          <rect x="2" y="14" width="8" height="8" rx="1"/>
+          <line x1="14" y1="14" x2="18" y2="14"/>
+          <line x1="14" y1="14" x2="14" y2="18"/>
+          <line x1="22" y1="14" x2="22" y2="18"/>
+          <line x1="18" y1="22" x2="22" y2="22"/>
+          <line x1="22" y1="18" x2="22" y2="22"/>
+        </svg>
+      </button>
     </div>
   </header>
 
@@ -727,29 +780,37 @@ function getHtml(targetUrl, deviceCatalog) {
             <div id="statusbar" class="statusbar">
               <span class="status-time">9:41</span>
               <span class="status-icons">
-                <span class="signal"></span>
-                <span class="wifi"></span>
-                <span class="battery"></span>
+                <span class="signal-bars">
+                  <span class="signal-bar"></span>
+                  <span class="signal-bar"></span>
+                  <span class="signal-bar"></span>
+                  <span class="signal-bar"></span>
+                </span>
+                <span class="wifi-icon">
+                  <svg viewBox="0 0 18 14" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round">
+                    <path d="M1 5.5c4-3.3 12-3.3 16 0" opacity="0.4"/>
+                    <path d="M4 8.5c3-2 8-2 11 0" opacity="0.6"/>
+                    <path d="M7 11.5c2-1 5-1 7 0"/>
+                    <circle cx="9.5" cy="13" r="1" fill="white" stroke="none"/>
+                  </svg>
+                </span>
+                <span class="battery-icon">
+                  <svg viewBox="0 0 28 14" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="0.5" y="0.5" width="23" height="13" rx="2.5" opacity="0.95"/>
+                    <rect x="24" y="4" width="3" height="6" rx="1" opacity="0.5"/>
+                    <rect x="3" y="3" width="14" height="8" rx="1.5" fill="white" opacity="0.95"/>
+                  </svg>
+                </span>
               </span>
             </div>
 
-<iframe
-  id="previewFrame"
-  class="webview-frame"
-  src="about:blank"
-  title="Mobile Preview"
-  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
-></iframe>
-
-            <div id="frameOverlay" class="frame-overlay hidden">
-              <div class="frame-overlay-content">
-                <div id="overlaySpinner" class="spinner"></div>
-                <div id="overlayIcon" class="icon hidden">!</div>
-                <div id="overlayMsg" class="msg">Connecting...</div>
-                <div id="overlaySub" class="sub"></div>
-                <button id="retryBtn" class="rbtn hidden">Retry</button>
-              </div>
-            </div>
+            <iframe
+              id="previewFrame"
+              class="webview-frame"
+              src="${safeFrame}"
+              title="Mobile Preview"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+            ></iframe>
 
             <div class="address-bar-wrap">
               <input
@@ -758,17 +819,30 @@ function getHtml(targetUrl, deviceCatalog) {
                 value="${safeTarget}"
                 spellcheck="false"
                 placeholder="Enter URL and press Enter"
-                list="urlHistoryList"
               />
-              <datalist id="urlHistoryList"></datalist>
             </div>
 
             <div id="homeIndicator" class="home-indicator"></div>
+            <div id="frameOverlay" class="frame-overlay hidden">
+              <div id="overlaySpinner" class="spinner"></div>
+              <div id="overlayIcon" class="icon hidden">!</div>
+              <div id="overlayMsg" class="msg">Loading...</div>
+              <div id="overlaySub" class="sub"></div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </main>
+
+  <div id="qrOverlay" class="qr-overlay">
+    <div class="qr-card">
+      <img id="qrImage" alt="QR Code" />
+      <div id="qrUrl" class="qr-url"></div>
+      <div class="qr-note">Phone &amp; laptop must be on the same Wi‑Fi network</div>
+      <button id="qrClose" class="qr-close">Close</button>
+    </div>
+  </div>
 
   <script>
     const vscode = acquireVsCodeApi();
@@ -780,118 +854,30 @@ function getHtml(targetUrl, deviceCatalog) {
     const phoneViewport = document.getElementById("phoneViewport");
     const phoneScale = document.getElementById("phoneScale");
     const phone = document.getElementById("phone");
+    const screenShell = document.getElementById("screenShell");
     const camera = document.getElementById("camera");
     const statusbar = document.getElementById("statusbar");
     const homeIndicator = document.getElementById("homeIndicator");
     const volumeUp = document.getElementById("volumeUp");
     const volumeDown = document.getElementById("volumeDown");
     const powerButton = document.getElementById("powerButton");
-    const previewFrame = document.getElementById("previewFrame");
+    const iframe = document.getElementById("previewFrame");
+    const rotateBtn = document.getElementById("rotateBtn");
+    const zoomInBtn = document.getElementById("zoomInBtn");
+    const zoomOutBtn = document.getElementById("zoomOutBtn");
+    const zoomLabel = document.getElementById("zoomLabel");
+    const qrBtn = document.getElementById("qrBtn");
+    const qrOverlay = document.getElementById("qrOverlay");
+    const qrImage = document.getElementById("qrImage");
+    const qrUrl = document.getElementById("qrUrl");
+    const qrClose = document.getElementById("qrClose");
     const frameOverlay = document.getElementById("frameOverlay");
     const overlaySpinner = document.getElementById("overlaySpinner");
     const overlayIcon = document.getElementById("overlayIcon");
     const overlayMsg = document.getElementById("overlayMsg");
     const overlaySub = document.getElementById("overlaySub");
-    const retryBtn = document.getElementById("retryBtn");
-    const rotateBtn = document.getElementById("rotateBtn");
-    const zoomOutBtn = document.getElementById("zoomOutBtn");
-    const zoomInBtn = document.getElementById("zoomInBtn");
-    const zoomLabel = document.getElementById("zoomLabel");
-    const qrBtn = document.getElementById("qrBtn");
-    const qrPopover = document.getElementById("qrPopover");
-    const qrImg = document.getElementById("qrImg");
-    const qrLabel = document.getElementById("qrLabel");
-    const frameColors = document.getElementById("frameColors");
-    const urlHistoryList = document.getElementById("urlHistoryList");
-
+    const LOCAL_IP = "${safeIp}";
     urlInput.dataset.fullUrl = "${safeJsUrl}";
-
-    let connectTimer;
-    let isLandscape = false;
-    let userZoom = 1;
-    let urlHistory = [];
-    let overlayHidden = false;
-    let overlayState = "start";
-
-    function saveState() {
-      vscode.setState({ urlHistory: urlHistory.slice(0, 10) });
-    }
-
-    function loadState() {
-      const state = vscode.getState();
-      if (state && Array.isArray(state.urlHistory)) {
-        urlHistory = state.urlHistory.slice(0, 10);
-      }
-    }
-    loadState();
-
-    function escHtml(s) {
-      return String(s).replace(/[&<>"]/g, function(c) {
-        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
-      });
-    }
-
-    function updateHistoryList() {
-      urlHistoryList.innerHTML = urlHistory
-        .map(function(u) { return '<option value="' + escHtml(u) + '">'; })
-        .join("");
-    }
-
-    function addToHistory(url) {
-      const idx = urlHistory.indexOf(url);
-      if (idx > -1) urlHistory.splice(idx, 1);
-      urlHistory.unshift(url);
-      if (urlHistory.length > 10) urlHistory.length = 10;
-      saveState();
-      updateHistoryList();
-    }
-
-    function setOverlay(state, url) {
-      clearTimeout(connectTimer);
-      overlayState = state;
-      if (state === "hidden") {
-        if (!overlayHidden) {
-          overlayHidden = true;
-          setTimeout(function () { frameOverlay.classList.add("hidden"); }, 300);
-        }
-        return;
-      }
-      overlayHidden = false;
-      frameOverlay.classList.remove("hidden");
-      if (state === "loading") {
-        overlaySpinner.classList.remove("hidden");
-        overlayIcon.classList.add("hidden");
-        overlayMsg.textContent = "Connecting\u2026";
-        overlaySub.textContent = url || "";
-        retryBtn.classList.add("hidden");
-        connectTimer = setTimeout(function () {
-          setOverlay("error", url);
-        }, 12000);
-      } else if (state === "error") {
-        overlaySpinner.classList.add("hidden");
-        overlayIcon.classList.remove("hidden");
-        overlayMsg.textContent = "Unable to connect";
-        overlaySub.textContent = url || "";
-        retryBtn.classList.remove("hidden");
-      } else if (state === "start") {
-        overlaySpinner.classList.add("hidden");
-        overlayIcon.classList.remove("hidden");
-        overlayMsg.textContent = "Enter a URL and press Enter";
-        overlaySub.textContent = "";
-        retryBtn.classList.add("hidden");
-      }
-    }
-
-    previewFrame.addEventListener("load", function () {
-      if (overlayState === "loading") {
-        clearTimeout(connectTimer);
-        setOverlay("hidden");
-      }
-    });
-
-    retryBtn.addEventListener("click", function () {
-      submit();
-    });
 
     function isDynamicIslandDevice(definition) {
       return definition.os === "ios" && /^iphone-(14|15|16|17)/.test(definition.id);
@@ -906,9 +892,9 @@ function getHtml(targetUrl, deviceCatalog) {
       const normalized = normalizeUrl(value);
       try {
         const parsed = new URL(normalized);
-        return parsed.host || normalized.replace(/^https?:\/\//i, "");
+        return parsed.host || normalized.replace(/^https?:\\/\\//i, "");
       } catch {
-        return normalized.replace(/^https?:\/\//i, "");
+        return normalized.replace(/^https?:\\/\\//i, "");
       }
     }
 
@@ -916,14 +902,16 @@ function getHtml(targetUrl, deviceCatalog) {
     catalog.forEach((group) => group.devices.forEach((item) => devices.set(item.id, item)));
 
     let currentDeviceId = "iphone-15";
+    let isLandscape = false;
+    let currentZoom = 1;
     deviceSelect.value = currentDeviceId;
 
     function normalizeUrl(value) {
       const input = String(value || "").trim();
       if (!input) return "${safeJsUrl}";
-      if (/^\d+$/.test(input)) return "http://localhost:" + input;
-      if (/^:\d+$/.test(input)) return "http://localhost" + input;
-      if (!/^https?:\/\//i.test(input)) return "http://" + input;
+      if (/^\\d+$/.test(input)) return "http://localhost:" + input;
+      if (/^:\\d+$/.test(input)) return "http://localhost" + input;
+      if (!/^https?:\\/\\//i.test(input)) return "http://" + input;
       return input;
     }
 
@@ -935,14 +923,10 @@ function getHtml(targetUrl, deviceCatalog) {
       const topInset = isTablet ? 24 : 11;
       const bottomInset = isTablet ? 24 : 21;
       const sideAllowance = isTablet ? 24 : 30;
-      let w = definition.width;
-      let h = definition.height;
-      if (isLandscape) { let t = w; w = h; h = t; }
 
       return {
-        width: w, height: h,
-        outerWidth: w + bezel * 2 + sideAllowance,
-        outerHeight: h + topInset + bottomInset,
+        outerWidth: definition.width + bezel * 2 + sideAllowance,
+        outerHeight: definition.height + topInset + bottomInset,
         screenRadius: isTablet ? 28 : (isIOS ? 42 : 32),
         frameRadius: isTablet ? 38 : (isIOS ? 52 : 40),
         statusPadTop: isTablet ? 16 : (chromeType === "notch" ? 18 : 19),
@@ -951,105 +935,154 @@ function getHtml(targetUrl, deviceCatalog) {
       };
     }
 
+    function setOverlay(state, url) {
+      if (state === "loading") {
+        frameOverlay.classList.remove("hidden");
+        overlaySpinner.classList.remove("hidden");
+        overlayIcon.classList.add("hidden");
+        overlayMsg.textContent = "Loading...";
+        overlaySub.textContent = url || "";
+      } else if (state === "error") {
+        frameOverlay.classList.remove("hidden");
+        overlaySpinner.classList.add("hidden");
+        overlayIcon.classList.remove("hidden");
+        overlayMsg.textContent = "Unable to connect";
+        overlaySub.textContent = url || "";
+      } else {
+        frameOverlay.classList.add("hidden");
+      }
+    }
+
     function scaleFrame() {
       if (!previewArea || !phoneScale) return;
 
-      const availW = Math.max(0, previewArea.clientWidth - 32);
-      const availH = Math.max(0, previewArea.clientHeight - 32);
+      const rect = previewArea.getBoundingClientRect();
+      const availW = Math.max(0, rect.width - 32);
+      const availH = Math.max(0, rect.height - 32);
       const frameW = phoneScale.offsetWidth;
       const frameH = phoneScale.offsetHeight;
-      const scaleX = frameW ? availW / frameW : 1;
-      const scaleY = frameH ? availH / frameH : 1;
-      let scale = Math.min(scaleX, scaleY, 1) * userZoom;
-      if (scale < 0.01) scale = 0.01;
+      if (!frameW || !frameH) return;
+      const scaleX = availW / frameW;
+      const scaleY = availH / frameH;
+      const scale = Math.min(scaleX, scaleY, 1) * currentZoom;
 
-      phoneScale.style.transform = "scale(" + scale.toFixed(4) + ")";
+      phoneScale.style.transform = "scale(" + Math.max(scale, 0).toFixed(4) + ")";
     }
 
     function renderDevice() {
       const definition = devices.get(currentDeviceId) || devices.get("iphone-15");
       const metrics = getDeviceMetrics(definition);
       const chromeType = getChromeType(definition);
+      const isTablet = definition.family === "tablet";
+      const padding = isTablet ? 14 : 15;
+      const border = 1;
+      const screenW = isLandscape ? definition.height : definition.width;
+      const screenH = isLandscape ? definition.width : definition.height;
+      const outerW = isLandscape ? metrics.outerHeight : metrics.outerWidth;
+      const outerH = isLandscape ? metrics.outerWidth : metrics.outerHeight;
+      const phoneW = screenW + padding * 2 + border * 2;
+      const phoneH = screenH + padding * 2 + border * 2;
 
-      phoneViewport.style.width = metrics.outerWidth + "px";
-      phoneViewport.style.height = metrics.outerHeight + "px";
-      phone.style.width = (metrics.width + 36) + "px";
-      phone.style.height = (metrics.height + 36) + "px";
-      screenShell.style.width = metrics.width + "px";
-      screenShell.style.height = metrics.height + "px";
+      root.style.setProperty("--screen-width", screenW + "px");
+      root.style.setProperty("--screen-height", screenH + "px");
+      root.style.setProperty("--outer-width", outerW + "px");
+      root.style.setProperty("--outer-height", outerH + "px");
+      root.style.setProperty("--screen-radius", metrics.screenRadius + "px");
+      root.style.setProperty("--frame-radius", metrics.frameRadius + "px");
+      root.style.setProperty("--status-pad-top", metrics.statusPadTop + "px");
+      root.style.setProperty("--camera-width", metrics.cameraWidth + "px");
+      root.style.setProperty("--camera-height", metrics.cameraHeight + "px");
 
-      phone.classList.toggle("tablet", definition.family === "tablet");
+      phoneViewport.style.width = outerW + "px";
+      phoneViewport.style.height = outerH + "px";
+      phoneScale.style.width = outerW + "px";
+      phoneScale.style.height = outerH + "px";
+      phone.style.width = phoneW + "px";
+      phone.style.height = phoneH + "px";
+      screenShell.style.width = screenW + "px";
+      screenShell.style.height = screenH + "px";
+
+      phone.classList.toggle("tablet", isTablet);
       camera.className = "camera " + chromeType;
       statusbar.classList.toggle("right-offset", chromeType === "island");
-      homeIndicator.classList.toggle("hidden", definition.family === "tablet");
-      volumeUp.classList.toggle("hidden", definition.family === "tablet");
-      volumeDown.classList.toggle("hidden", definition.family === "tablet");
-      powerButton.classList.toggle("hidden", definition.family === "tablet");
+      homeIndicator.classList.toggle("hidden", isTablet);
+      volumeUp.classList.toggle("hidden", isTablet);
+      volumeDown.classList.toggle("hidden", isTablet);
+      powerButton.classList.toggle("hidden", isTablet);
       rotateBtn.classList.toggle("active", isLandscape);
 
       requestAnimationFrame(scaleFrame);
     }
 
-    function submit() {
-      const url = normalizeUrl(urlInput.value);
-      urlInput.dataset.fullUrl = url;
-      urlInput.value = getUrlDisplayValue(url);
-      previewFrame.src = url;
-      setOverlay("loading", url);
-      addToHistory(url);
-      updateQR(url);
-      vscode.postMessage({ command: "loadUrl", url });
+    function submitUrl(url) {
+      const normalized = normalizeUrl(url);
+      urlInput.dataset.fullUrl = normalized;
+      urlInput.value = getUrlDisplayValue(normalized);
+      iframe.src = normalized;
+      setOverlay("loading", normalized);
+      vscode.postMessage({ command: "loadUrl", url: normalized });
     }
 
-    function updateQR(url) {
-      const encoded = encodeURIComponent(url);
-      qrImg.src = "https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=" + encoded;
-      qrLabel.textContent = url.replace(/^https?:\/\//i, "");
-    }
+    function submit() { submitUrl(urlInput.value); }
 
-    rotateBtn.addEventListener("click", function () {
-      isLandscape = !isLandscape;
-      renderDevice();
+    iframe.addEventListener("load", () => {
+      setOverlay("hide");
     });
 
-    function setZoom(v) {
-      userZoom = Math.max(0.25, Math.min(3, v));
-      zoomLabel.textContent = Math.round(userZoom * 100) + "%";
-      scaleFrame();
-    }
-    zoomOutBtn.addEventListener("click", function () { setZoom(userZoom - 0.1); });
-    zoomInBtn.addEventListener("click", function () { setZoom(userZoom + 0.1); });
-    zoomLabel.addEventListener("click", function () { setZoom(1); });
-
-    frameColors.addEventListener("click", function (e) {
-      const dot = e.target.closest(".color-dot");
-      if (!dot) return;
-      frameColors.querySelectorAll(".color-dot").forEach(function (d) { d.classList.remove("active"); });
-      dot.classList.add("active");
-      root.style.setProperty("--phone-finish", dot.dataset.finish);
-      root.style.setProperty("--phone-border", dot.dataset.border);
-    });
-
-    qrBtn.addEventListener("click", function (e) {
-      e.stopPropagation();
-      qrPopover.classList.toggle("open");
-    });
-    document.addEventListener("click", function () {
-      qrPopover.classList.remove("open");
-    });
-    qrPopover.addEventListener("click", function (e) {
-      e.stopPropagation();
+    iframe.addEventListener("error", () => {
+      setOverlay("error", iframe.src);
     });
 
     deviceSelect.addEventListener("change", () => {
       currentDeviceId = deviceSelect.value;
-      try { renderDevice(); } catch (e) { console.error("renderDevice error:", e); }
+      isLandscape = false;
+      currentZoom = 1;
+      zoomLabel.textContent = "1×";
+      renderDevice();
+    });
+
+    rotateBtn.addEventListener("click", () => {
+      isLandscape = !isLandscape;
+      renderDevice();
+    });
+
+    zoomInBtn.addEventListener("click", () => {
+      currentZoom = Math.min(currentZoom + 0.25, 3);
+      zoomLabel.textContent = currentZoom.toFixed(2).replace(/\.?0+$/, "") + "×";
+      scaleFrame();
+    });
+
+    zoomOutBtn.addEventListener("click", () => {
+      currentZoom = Math.max(currentZoom - 0.25, 0.25);
+      zoomLabel.textContent = currentZoom.toFixed(2).replace(/\.?0+$/, "") + "×";
+      scaleFrame();
+    });
+
+    function qrUrlForNetwork(url) {
+      if (LOCAL_IP && LOCAL_IP !== "localhost") {
+        return url
+          .replace(/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?/i, "http://" + LOCAL_IP + "$2");
+      }
+      return url;
+    }
+
+    qrBtn.addEventListener("click", () => {
+      const url = qrUrlForNetwork(urlInput.dataset.fullUrl || normalizeUrl(urlInput.value));
+      qrImage.src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(url);
+      qrUrl.textContent = getUrlDisplayValue(url);
+      qrOverlay.classList.add("open");
+    });
+
+    qrClose.addEventListener("click", () => {
+      qrOverlay.classList.remove("open");
+    });
+
+    qrOverlay.addEventListener("click", (e) => {
+      if (e.target === qrOverlay) qrOverlay.classList.remove("open");
     });
 
     urlInput.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
-        submit();
-      }
+      if (event.key === "Enter") submit();
     });
 
     urlInput.addEventListener("focus", () => {
@@ -1063,18 +1096,15 @@ function getHtml(targetUrl, deviceCatalog) {
       urlInput.value = getUrlDisplayValue(fullUrl);
     });
 
-    window.addEventListener("resize", scaleFrame);
+    let resizeTimer;
+    window.addEventListener("resize", () => {
+      if (resizeTimer) cancelAnimationFrame(resizeTimer);
+      resizeTimer = requestAnimationFrame(scaleFrame);
+    });
 
-    try {
-      urlInput.value = getUrlDisplayValue(urlInput.dataset.fullUrl);
-      setOverlay("start");
-      updateHistoryList();
-      updateQR(urlInput.dataset.fullUrl);
-      renderDevice();
-    } catch (e) {
-      console.error("Mobile Preview init error:", e);
-      setOverlay("start");
-    }
+    urlInput.value = getUrlDisplayValue(urlInput.dataset.fullUrl);
+    setOverlay("loading", urlInput.dataset.fullUrl);
+    renderDevice();
   </script>
 </body>
 </html>`;
