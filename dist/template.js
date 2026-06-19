@@ -32,7 +32,7 @@ function getHtml(targetUrl, deviceCatalog) {
       --camera-width: 126px;
       --camera-height: 34px;
       --user-zoom: 1;
-      --phone-finish: linear-gradient(180deg, #0f1013 0%, #050507 100%);
+      --phone-finish: #1c1c1e;
       --phone-border: #3a3a3a;
     }
 
@@ -700,7 +700,7 @@ function getHtml(targetUrl, deviceCatalog) {
 
     <div class="tb-group">
       <div class="frame-colors" id="frameColors">
-        <span class="color-dot active" style="background:#1c1c1e;border-color:rgba(255,255,255,0.15)" data-finish="linear-gradient(180deg, #0f1013 0%, #050507 100%)" data-border="#3a3a3a" title="Dark"></span>
+        <span class="color-dot active" style="background:#1c1c1e;border-color:rgba(255,255,255,0.15)" data-finish="#1c1c1e" data-border="#3a3a3a" title="Dark"></span>
         <span class="color-dot" style="background:#e5e5e7" data-finish="#e5e5e7" data-border="#c7c7cc" title="Silver"></span>
         <span class="color-dot" style="background:#5b4a6e" data-finish="#5b4a6e" data-border="#7b6a8e" title="Purple"></span>
         <span class="color-dot" style="background:#c9a96e" data-finish="#c9a96e" data-border="#e0c080" title="Gold"></span>
