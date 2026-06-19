@@ -590,7 +590,7 @@ function getHtml(targetUrl, deviceCatalog) {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #f5f5f7;
+      background: #1c1c1e;
       transition: opacity 0.25s ease;
     }
 
@@ -612,8 +612,8 @@ function getHtml(targetUrl, deviceCatalog) {
     .frame-overlay-content .spinner {
       width: 28px;
       height: 28px;
-      border: 3px solid rgba(0,0,0,0.08);
-      border-top-color: #555;
+      border: 3px solid rgba(255,255,255,0.08);
+      border-top-color: #aaa;
       border-radius: 50%;
       animation: fspin 0.7s linear infinite;
     }
@@ -626,23 +626,23 @@ function getHtml(targetUrl, deviceCatalog) {
       width: 32px;
       height: 32px;
       border-radius: 50%;
-      background: rgba(0,0,0,0.05);
+      background: rgba(255,255,255,0.05);
       display: flex;
       align-items: center;
       justify-content: center;
       font: 16px/1 sans-serif;
-      color: rgba(0,0,0,0.4);
+      color: rgba(255,255,255,0.4);
     }
 
     .frame-overlay-content .msg {
       font-size: 13px;
-      color: rgba(0,0,0,0.7);
+      color: rgba(255,255,255,0.8);
       line-height: 1.4;
     }
 
     .frame-overlay-content .sub {
       font-size: 11px;
-      color: rgba(0,0,0,0.35);
+      color: rgba(255,255,255,0.4);
       word-break: break-all;
     }
 
@@ -650,15 +650,15 @@ function getHtml(targetUrl, deviceCatalog) {
       margin-top: 4px;
       padding: 6px 20px;
       border-radius: 999px;
-      border: 1px solid rgba(0,0,0,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
       background: transparent;
-      color: rgba(0,0,0,0.55);
+      color: rgba(255,255,255,0.6);
       font-size: 12px;
       cursor: pointer;
     }
 
     .frame-overlay-content .rbtn:hover {
-      background: rgba(0,0,0,0.06);
+      background: rgba(255,255,255,0.08);
     }
 
     .frame-overlay.hidden .spinner {
@@ -729,13 +729,13 @@ function getHtml(targetUrl, deviceCatalog) {
               </span>
             </div>
 
-            <iframe
-              id="previewFrame"
-              class="webview-frame"
-              src="${safeTarget}"
-              title="Mobile Preview"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
-            ></iframe>
+<iframe
+  id="previewFrame"
+  class="webview-frame"
+  src="about:blank"
+  title="Mobile Preview"
+  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+></iframe>
 
             <div id="frameOverlay" class="frame-overlay hidden">
               <div class="frame-overlay-content">
@@ -806,6 +806,8 @@ function getHtml(targetUrl, deviceCatalog) {
     let isLandscape = false;
     let userZoom = 1;
     let urlHistory = [];
+    let overlayHidden = false;
+    let overlayState = "start";
 
     function saveState() {
       vscode.setState({ urlHistory: urlHistory.slice(0, 10) });
@@ -842,10 +844,15 @@ function getHtml(targetUrl, deviceCatalog) {
 
     function setOverlay(state, url) {
       clearTimeout(connectTimer);
+      overlayState = state;
       if (state === "hidden") {
-        frameOverlay.classList.add("hidden");
+        if (!overlayHidden) {
+          overlayHidden = true;
+          setTimeout(function () { frameOverlay.classList.add("hidden"); }, 300);
+        }
         return;
       }
+      overlayHidden = false;
       frameOverlay.classList.remove("hidden");
       if (state === "loading") {
         overlaySpinner.classList.remove("hidden");
@@ -862,12 +869,20 @@ function getHtml(targetUrl, deviceCatalog) {
         overlayMsg.textContent = "Unable to connect";
         overlaySub.textContent = url || "";
         retryBtn.classList.remove("hidden");
+      } else if (state === "start") {
+        overlaySpinner.classList.add("hidden");
+        overlayIcon.classList.remove("hidden");
+        overlayMsg.textContent = "Enter a URL and press Enter";
+        overlaySub.textContent = "";
+        retryBtn.classList.add("hidden");
       }
     }
 
     previewFrame.addEventListener("load", function () {
-      clearTimeout(connectTimer);
-      setOverlay("hidden");
+      if (overlayState === "loading") {
+        clearTimeout(connectTimer);
+        setOverlay("hidden");
+      }
     });
 
     retryBtn.addEventListener("click", function () {
@@ -1030,7 +1045,7 @@ function getHtml(targetUrl, deviceCatalog) {
 
     deviceSelect.addEventListener("change", () => {
       currentDeviceId = deviceSelect.value;
-      renderDevice();
+      try { renderDevice(); } catch (e) { console.error("renderDevice error:", e); }
     });
 
     urlInput.addEventListener("keydown", (event) => {
@@ -1052,11 +1067,16 @@ function getHtml(targetUrl, deviceCatalog) {
 
     window.addEventListener("resize", scaleFrame);
 
-    urlInput.value = getUrlDisplayValue(urlInput.dataset.fullUrl);
-    setOverlay("loading", urlInput.dataset.fullUrl);
-    updateHistoryList();
-    updateQR(urlInput.dataset.fullUrl);
-    renderDevice();
+    try {
+      urlInput.value = getUrlDisplayValue(urlInput.dataset.fullUrl);
+      setOverlay("start");
+      updateHistoryList();
+      updateQR(urlInput.dataset.fullUrl);
+      renderDevice();
+    } catch (e) {
+      console.error("Mobile Preview init error:", e);
+      setOverlay("start");
+    }
   </script>
 </body>
 </html>`;
