@@ -31,7 +31,7 @@ function getHtml(targetUrl, deviceCatalog) {
       --status-pad-top: 19px;
       --camera-width: 126px;
       --camera-height: 34px;
-      --user-zoom: 1;
+      --device-scale: 1;
       --phone-finish: #1c1c1e;
       --phone-border: #3a3a3a;
     }
@@ -55,18 +55,16 @@ function getHtml(targetUrl, deviceCatalog) {
 
     button, select, input { font: inherit; }
 
-    /* ── Toolbar ── */
     .toolbar {
       width: 100%;
       min-height: 48px;
       display: flex;
       align-items: center;
-      gap: 0;
+      gap: 2px;
       background: rgba(14,14,16,0.92);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
       border-bottom: 1px solid rgba(255,255,255,0.06);
-      z-index: 100;
     }
 
     .select-shell {
@@ -210,7 +208,6 @@ function getHtml(targetUrl, deviceCatalog) {
       white-space: nowrap;
     }
 
-    /* ── Preview ── */
     .preview-container,
     .preview-area {
       width: 100%;
@@ -282,7 +279,6 @@ function getHtml(targetUrl, deviceCatalog) {
       border-radius: 32px;
     }
 
-    /* ── Hardware Buttons ── */
     .hardware-button {
       position: absolute;
       background: #2a2a2a;
@@ -324,7 +320,6 @@ function getHtml(targetUrl, deviceCatalog) {
       display: none;
     }
 
-    /* ── Screen Shell ── */
     .screen-shell {
       position: relative;
       width: var(--screen-width);
@@ -410,7 +405,6 @@ function getHtml(targetUrl, deviceCatalog) {
       background: rgba(0,0,0,0.72);
     }
 
-    /* ── Status Bar ── */
     .statusbar {
       position: absolute;
       top: 0;
@@ -522,7 +516,6 @@ function getHtml(targetUrl, deviceCatalog) {
       background: white;
     }
 
-    /* ── Iframe & Overlay ── */
     .webview-frame {
       position: absolute;
       top: 50px;
@@ -559,12 +552,11 @@ function getHtml(targetUrl, deviceCatalog) {
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
-      transition: border-color 0.2s, box-shadow 0.2s;
+      transition: border-color 0.2s;
     }
 
     .address-bar:focus {
       border-color: rgba(110,168,254,0.5);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 0 0 3px rgba(110,168,254,0.08);
     }
 
     .address-bar::placeholder {
@@ -918,6 +910,7 @@ function getHtml(targetUrl, deviceCatalog) {
 
     function getDeviceMetrics(definition) {
       const isTablet = definition.family === "tablet";
+      const isIOS = definition.os === "ios";
       const chromeType = getChromeType(definition);
       const bezel = isTablet ? 24 : 27;
       const topInset = isTablet ? 24 : 11;
@@ -931,8 +924,8 @@ function getHtml(targetUrl, deviceCatalog) {
         width: w, height: h,
         outerWidth: w + bezel * 2 + sideAllowance,
         outerHeight: h + topInset + bottomInset,
-        screenRadius: isTablet ? 28 : (definition.os === "ios" ? 42 : 32),
-        frameRadius: isTablet ? 38 : (definition.os === "ios" ? 52 : 40),
+        screenRadius: isTablet ? 28 : (isIOS ? 42 : 32),
+        frameRadius: isTablet ? 38 : (isIOS ? 52 : 40),
         statusPadTop: isTablet ? 16 : (chromeType === "notch" ? 18 : 19),
         cameraWidth: chromeType === "island" ? 126 : 176,
         cameraHeight: chromeType === "island" ? 37 : 32
@@ -948,10 +941,10 @@ function getHtml(targetUrl, deviceCatalog) {
       const frameH = phoneScale.offsetHeight;
       const scaleX = frameW ? availW / frameW : 1;
       const scaleY = frameH ? availH / frameH : 1;
-      const s = Math.min(scaleX, scaleY, 1) * userZoom;
-      if (s < 0.01) s = 0.01;
+      let scale = Math.min(scaleX, scaleY, 1) * userZoom;
+      if (scale < 0.01) scale = 0.01;
 
-      phoneScale.style.transform = "scale(" + s.toFixed(4) + ")";
+      phoneScale.style.transform = "scale(" + scale.toFixed(4) + ")";
     }
 
     function renderDevice() {
@@ -1001,13 +994,11 @@ function getHtml(targetUrl, deviceCatalog) {
       qrLabel.textContent = url.replace(/^https?:\/\//i, "");
     }
 
-    /* ── Orientation ── */
     rotateBtn.addEventListener("click", function () {
       isLandscape = !isLandscape;
       renderDevice();
     });
 
-    /* ── Zoom ── */
     function setZoom(v) {
       userZoom = Math.max(0.25, Math.min(3, v));
       zoomLabel.textContent = Math.round(userZoom * 100) + "%";
@@ -1017,7 +1008,6 @@ function getHtml(targetUrl, deviceCatalog) {
     zoomInBtn.addEventListener("click", function () { setZoom(userZoom + 0.1); });
     zoomLabel.addEventListener("click", function () { setZoom(1); });
 
-    /* ── Frame Color ── */
     frameColors.addEventListener("click", function (e) {
       const dot = e.target.closest(".color-dot");
       if (!dot) return;
@@ -1027,7 +1017,6 @@ function getHtml(targetUrl, deviceCatalog) {
       root.style.setProperty("--phone-border", dot.dataset.border);
     });
 
-    /* ── QR ── */
     qrBtn.addEventListener("click", function (e) {
       e.stopPropagation();
       qrPopover.classList.toggle("open");
@@ -1039,32 +1028,30 @@ function getHtml(targetUrl, deviceCatalog) {
       e.stopPropagation();
     });
 
-    /* ── Device Select ── */
-    deviceSelect.addEventListener("change", function () {
+    deviceSelect.addEventListener("change", () => {
       currentDeviceId = deviceSelect.value;
       renderDevice();
     });
 
-    /* ── URL Input ── */
-    urlInput.addEventListener("keydown", function (event) {
-      if (event.key === "Enter") submit();
+    urlInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        submit();
+      }
     });
 
-    urlInput.addEventListener("focus", function () {
+    urlInput.addEventListener("focus", () => {
       urlInput.value = urlInput.dataset.fullUrl || normalizeUrl(urlInput.value);
       requestAnimationFrame(() => urlInput.select());
     });
 
-    urlInput.addEventListener("blur", function () {
+    urlInput.addEventListener("blur", () => {
       const fullUrl = normalizeUrl(urlInput.dataset.fullUrl || urlInput.value);
       urlInput.dataset.fullUrl = fullUrl;
       urlInput.value = getUrlDisplayValue(fullUrl);
     });
 
-    /* ── Resize ── */
     window.addEventListener("resize", scaleFrame);
 
-    /* ── Init ── */
     urlInput.value = getUrlDisplayValue(urlInput.dataset.fullUrl);
     setOverlay("loading", urlInput.dataset.fullUrl);
     updateHistoryList();
