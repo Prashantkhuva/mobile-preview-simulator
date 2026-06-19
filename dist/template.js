@@ -223,8 +223,8 @@ function getHtml(targetUrl, deviceCatalog) {
 
     .phone-viewport {
       position: relative;
-      width: var(--outer-width);
-      height: var(--outer-height);
+      width: 447px;
+      height: 918px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -233,8 +233,8 @@ function getHtml(targetUrl, deviceCatalog) {
 
     .phone-scale,
     .phone-frame-wrapper {
-      width: var(--outer-width);
-      height: var(--outer-height);
+      width: 447px;
+      height: 918px;
       display: grid;
       place-items: center;
       transform-origin: center center;
@@ -242,12 +242,14 @@ function getHtml(targetUrl, deviceCatalog) {
 
     .phone {
       position: relative;
-      width: calc(var(--screen-width) + 36px);
-      height: calc(var(--screen-height) + 36px);
+      min-width: 400px;
+      min-height: 700px;
+      width: 429px;
+      height: 888px;
       padding: 15px;
       border-radius: 54px;
-      border: 1px solid var(--phone-border);
-      background: var(--phone-finish);
+      border: 1px solid #3a3a3a;
+      background: #1c1c1e;
       box-shadow:
         0 0 0 1px rgba(255,255,255,0.04),
         0 30px 80px rgba(0,0,0,0.8);
@@ -268,8 +270,8 @@ function getHtml(targetUrl, deviceCatalog) {
     }
 
     .phone.tablet {
-      width: calc(var(--screen-width) + 34px);
-      height: calc(var(--screen-height) + 34px);
+      width: calc(var(--screen-width, 834px) + 34px);
+      height: calc(var(--screen-height, 1194px) + 34px);
       padding: 14px;
       border-radius: 40px;
     }
@@ -322,8 +324,10 @@ function getHtml(targetUrl, deviceCatalog) {
 
     .screen-shell {
       position: relative;
-      width: var(--screen-width);
-      height: var(--screen-height);
+      min-width: 350px;
+      min-height: 700px;
+      width: 393px;
+      height: 852px;
       border-radius: 44px;
       overflow: hidden;
       background: #000;
@@ -967,18 +971,12 @@ function getHtml(targetUrl, deviceCatalog) {
       const metrics = getDeviceMetrics(definition);
       const chromeType = getChromeType(definition);
 
-      root.style.setProperty("--screen-width", metrics.width + "px");
-      root.style.setProperty("--screen-height", metrics.height + "px");
-      root.style.setProperty("--outer-width", metrics.outerWidth + "px");
-      root.style.setProperty("--outer-height", metrics.outerHeight + "px");
-      root.style.setProperty("--screen-radius", metrics.screenRadius + "px");
-      root.style.setProperty("--frame-radius", metrics.frameRadius + "px");
-      root.style.setProperty("--status-pad-top", metrics.statusPadTop + "px");
-      root.style.setProperty("--camera-width", metrics.cameraWidth + "px");
-      root.style.setProperty("--camera-height", metrics.cameraHeight + "px");
-
       phoneViewport.style.width = metrics.outerWidth + "px";
       phoneViewport.style.height = metrics.outerHeight + "px";
+      phone.style.width = (metrics.width + 36) + "px";
+      phone.style.height = (metrics.height + 36) + "px";
+      screenShell.style.width = metrics.width + "px";
+      screenShell.style.height = metrics.height + "px";
 
       phone.classList.toggle("tablet", definition.family === "tablet");
       camera.className = "camera " + chromeType;
