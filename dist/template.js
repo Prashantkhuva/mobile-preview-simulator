@@ -49,7 +49,7 @@ function getHtml(targetUrl, iframeUrl, localIp) {
 
     body {
       display: grid;
-      grid-template-rows: auto auto 1fr;
+      grid-template-rows: auto 1fr;
       color: var(--text);
       font: 13px/1.4 -apple-system, "Segoe UI", system-ui, sans-serif;
       background:
@@ -470,14 +470,20 @@ function getHtml(targetUrl, iframeUrl, localIp) {
     }
 
     .address-bar-wrap {
-      width: 100%;
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: 10px;
       box-sizing: border-box;
-      padding: 7px 10px;
-      background: rgba(10, 10, 12, 0.72);
+      padding: 6px;
+      border-radius: 999px;
+      background: rgba(14, 14, 16, 0.88);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      z-index: 10;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.08),
+        0 8px 32px rgba(0,0,0,0.55);
+      z-index: 50;
     }
 
     .address-bar {

@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.5.4
+
+- The URL bar now floats at the bottom of the preview instead of taking a full row at the top, so the phone frame gets the extra height.
+
 ## 3.5.3
 
 - Moved the URL bar out of the phone screen into its own row under the device-size toolbar, so the previewed site gets the full screen height.
