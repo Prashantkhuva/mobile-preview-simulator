@@ -568,6 +568,88 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       background: rgba(255,255,255,0.08);
     }
 
+    .history-btn {
+      display: none;
+      pointer-events: auto;
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      place-items: center;
+      background: transparent;
+      color: rgba(255,255,255,0.55);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .address-bar-wrap.open .history-btn {
+      display: grid;
+    }
+
+    .history-btn:hover {
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.9);
+    }
+
+    .history-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .history-list {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: calc(100% + 8px);
+      box-sizing: border-box;
+      max-height: 210px;
+      overflow-y: auto;
+      padding: 6px;
+      border-radius: 14px;
+      background: rgba(14, 14, 16, 0.94);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.08),
+        0 12px 40px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      z-index: 60;
+    }
+
+    .history-list.hidden {
+      display: none;
+    }
+
+    .address-bar-wrap:not(.open) .history-list {
+      display: none;
+    }
+
+    .history-item {
+      width: 100%;
+      box-sizing: border-box;
+      text-align: left;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: rgba(255,255,255,0.75);
+      font: 12px/1.3 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: background 0.15s ease;
+    }
+
+    .history-item:hover {
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.95);
+    }
+
     .home-indicator {
       position: absolute;
       bottom: 8px;
@@ -947,7 +1029,15 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       <select id="deviceSelect" class="device-picker device-select">${selectMarkup}</select>
     </div>
     <div class="toolbar-actions">
-      <button id="rotateBtn" class="toolbar-btn" title="Rotate">
+      <button id="reloadBtn" class="toolbar-btn" title="Reload (Ctrl+R)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 4v6h-6"/>
+          <path d="M1 20v-6h6"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>
+          <path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+      </button>
+      <button id="rotateBtn" class="toolbar-btn" title="Rotate (R)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M1 4v6h6"/>
           <path d="M3.5 15.5a9 9 0 1 0 2.1-11.2L1 10"/>
@@ -969,6 +1059,14 @@ function getHtml(targetUrl, iframeUrl, localIp) {
           <line x1="11" y1="7.5" x2="11" y2="14.5"/>
         </svg>
       </button>
+      <button id="autoRefreshBtn" class="toolbar-btn" title="Auto-refresh on save">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="17 1 21 5 17 9"/>
+          <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+          <polyline points="7 23 3 19 7 15"/>
+          <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+        </svg>
+      </button>
       <button id="qrBtn" class="toolbar-btn" title="QR code">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <rect x="2" y="2" width="8" height="8" rx="1"/>
@@ -985,6 +1083,7 @@ function getHtml(targetUrl, iframeUrl, localIp) {
   </header>
 
   <div id="urlBar" class="address-bar-wrap">
+    <div id="historyList" class="history-list hidden"></div>
     <input
       id="urlInput"
       class="address-bar"
@@ -992,6 +1091,11 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       spellcheck="false"
       placeholder="Enter URL and press Enter"
     />
+    <button id="historyBtn" class="history-btn" type="button" title="Recent URLs" aria-label="Recent URLs">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="18 15 12 9 6 15"/>
+      </svg>
+    </button>
     <button id="urlToggle" class="url-toggle" type="button" title="" aria-label="Show URL bar">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
@@ -1093,6 +1197,7 @@ function getHtml(targetUrl, iframeUrl, localIp) {
 
   <script>
     const vscode = acquireVsCodeApi();
+    const saved = vscode.getState() || {};
     const catalog = ${catalogJson};
     const root = document.documentElement;
     const urlInput = document.getElementById("urlInput");
@@ -1112,6 +1217,10 @@ function getHtml(targetUrl, iframeUrl, localIp) {
     const powerButton = document.getElementById("powerButton");
     const iframe = document.getElementById("previewFrame");
     const rotateBtn = document.getElementById("rotateBtn");
+    const reloadBtn = document.getElementById("reloadBtn");
+    const autoRefreshBtn = document.getElementById("autoRefreshBtn");
+    const historyBtn = document.getElementById("historyBtn");
+    const historyList = document.getElementById("historyList");
     const zoomInBtn = document.getElementById("zoomInBtn");
     const zoomOutBtn = document.getElementById("zoomOutBtn");
     const zoomLabel = document.getElementById("zoomLabel");
@@ -1153,10 +1262,27 @@ function getHtml(targetUrl, iframeUrl, localIp) {
     const devices = new Map();
     catalog.forEach((group) => group.devices.forEach((item) => devices.set(item.id, item)));
 
-    let currentDeviceId = "iphone-15";
-    let isLandscape = false;
-    let currentZoom = 1;
+    let currentDeviceId = saved.deviceId || "iphone-15";
+    let isLandscape = !!saved.landscape;
+    let currentZoom = typeof saved.zoom === "number" ? saved.zoom : 1;
+    let autoRefresh = !!saved.autoRefresh;
+    let urlHistory = Array.isArray(saved.history) ? saved.history.slice(0, 10) : [];
     deviceSelect.value = currentDeviceId;
+
+    function fmtZoom(value) {
+      return value.toFixed(2).replace(/\\.?0+$/, "") + "\\u00d7";
+    }
+
+    function saveState() {
+      vscode.setState({
+        url: urlInput.dataset.fullUrl,
+        deviceId: currentDeviceId,
+        landscape: isLandscape,
+        zoom: currentZoom,
+        autoRefresh: autoRefresh,
+        history: urlHistory,
+      });
+    }
 
     function normalizeUrl(value) {
       const input = String(value || "").trim();
@@ -1292,14 +1418,54 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       urlToggle.title = normalized;
       iframe.src = normalized;
       setOverlay("loading", normalized);
+      pushHistory(normalized);
+      saveState();
       vscode.postMessage({ command: "loadUrl", url: normalized });
     }
 
     function submit() { submitUrl(urlInput.value); }
 
+    function reloadFrame() {
+      const url = urlInput.dataset.fullUrl || normalizeUrl(urlInput.value);
+      setOverlay("loading", url);
+      iframe.src = url;
+    }
+
+    function openUrlBar() {
+      urlBar.classList.add("open");
+      urlInput.focus();
+    }
+
+    function pushHistory(url) {
+      urlHistory = [url, ...urlHistory.filter((item) => item !== url)].slice(0, 10);
+      renderHistory();
+    }
+
+    function renderHistory() {
+      historyList.textContent = "";
+      urlHistory.forEach((item) => {
+        const entry = document.createElement("button");
+        entry.type = "button";
+        entry.className = "history-item";
+        entry.textContent = item;
+        entry.addEventListener("click", () => {
+          historyList.classList.add("hidden");
+          submitUrl(item);
+          urlBar.classList.remove("open");
+        });
+        historyList.appendChild(entry);
+      });
+      if (urlHistory.length === 0) historyList.classList.add("hidden");
+    }
+
     window.addEventListener("message", (event) => {
       const message = event.data;
-      if (!message || message.command !== "setUrl") return;
+      if (!message) return;
+      if (message.command === "reload") {
+        if (autoRefresh) reloadFrame();
+        return;
+      }
+      if (message.command !== "setUrl") return;
       const normalized = normalizeUrl(message.url || "");
       if (!normalized || normalized === urlInput.dataset.fullUrl) return;
       urlInput.dataset.fullUrl = normalized;
@@ -1307,6 +1473,8 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       urlToggle.title = normalized;
       iframe.src = normalized;
       setOverlay("loading", normalized);
+      pushHistory(normalized);
+      saveState();
     });
 
     let probeToken = 0;
@@ -1332,25 +1500,46 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       currentDeviceId = deviceSelect.value;
       isLandscape = false;
       currentZoom = 1;
-      zoomLabel.textContent = "1×";
+      zoomLabel.textContent = fmtZoom(currentZoom);
       renderDevice();
+      saveState();
     });
 
     rotateBtn.addEventListener("click", () => {
       isLandscape = !isLandscape;
       renderDevice();
+      saveState();
+    });
+
+    reloadBtn.addEventListener("click", () => {
+      reloadFrame();
+    });
+
+    autoRefreshBtn.addEventListener("click", () => {
+      autoRefresh = !autoRefresh;
+      autoRefreshBtn.classList.toggle("active", autoRefresh);
+      autoRefreshBtn.title = autoRefresh
+        ? "Auto-refresh on save (on)"
+        : "Auto-refresh on save (off)";
+      saveState();
+    });
+
+    historyBtn.addEventListener("click", () => {
+      historyList.classList.toggle("hidden");
     });
 
     zoomInBtn.addEventListener("click", () => {
       currentZoom = Math.min(currentZoom + 0.25, 3);
-      zoomLabel.textContent = currentZoom.toFixed(2).replace(/\.?0+$/, "") + "×";
+      zoomLabel.textContent = fmtZoom(currentZoom);
       scaleFrame();
+      saveState();
     });
 
     zoomOutBtn.addEventListener("click", () => {
       currentZoom = Math.max(currentZoom - 0.25, 0.25);
-      zoomLabel.textContent = currentZoom.toFixed(2).replace(/\.?0+$/, "") + "×";
+      zoomLabel.textContent = fmtZoom(currentZoom);
       scaleFrame();
+      saveState();
     });
 
     function qrUrlForNetwork(url) {
@@ -1381,12 +1570,64 @@ function getHtml(targetUrl, iframeUrl, localIp) {
     });
 
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && qrOverlay.classList.contains("open")) closeQr();
+      const target = event.target;
+      const typing =
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable);
+      const mod = event.ctrlKey || event.metaKey;
+
+      if (event.key === "Escape") {
+        if (qrOverlay.classList.contains("open")) {
+          closeQr();
+          return;
+        }
+        if (
+          urlBar.classList.contains("open") &&
+          !historyList.classList.contains("hidden")
+        ) {
+          historyList.classList.add("hidden");
+          return;
+        }
+        if (urlBar.classList.contains("open")) {
+          urlBar.classList.remove("open");
+          urlInput.blur();
+        }
+        return;
+      }
+
+      if (typing) return;
+
+      if (mod && (event.key === "r" || event.key === "R")) {
+        event.preventDefault();
+        reloadFrame();
+        return;
+      }
+      if (mod && (event.key === "l" || event.key === "L")) {
+        event.preventDefault();
+        openUrlBar();
+        return;
+      }
+      if (mod) return;
+
+      if (event.key === "r" || event.key === "R") {
+        rotateBtn.click();
+        return;
+      }
+      if (event.key === "+" || event.key === "=") {
+        zoomInBtn.click();
+        return;
+      }
+      if (event.key === "-" || event.key === "_") {
+        zoomOutBtn.click();
+      }
     });
 
     urlToggle.addEventListener("click", () => {
       const open = urlBar.classList.toggle("open");
       if (open) urlInput.focus();
+      else historyList.classList.add("hidden");
     });
 
     urlInput.addEventListener("keydown", (event) => {
@@ -1418,8 +1659,17 @@ function getHtml(targetUrl, iframeUrl, localIp) {
     });
 
     urlInput.value = getUrlDisplayValue(urlInput.dataset.fullUrl);
-    setOverlay("loading", urlInput.dataset.fullUrl);
+    zoomLabel.textContent = fmtZoom(currentZoom);
+    autoRefreshBtn.classList.toggle("active", autoRefresh);
+    if (autoRefresh) autoRefreshBtn.title = "Auto-refresh on save (on)";
+    renderHistory();
+    if (saved.url && saved.url !== urlInput.dataset.fullUrl) {
+      submitUrl(saved.url);
+    } else {
+      setOverlay("loading", urlInput.dataset.fullUrl);
+    }
     renderDevice();
+    saveState();
   </script>
 </body>
 </html>`;

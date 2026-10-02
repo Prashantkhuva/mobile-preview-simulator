@@ -48,6 +48,25 @@ function activate(context) {
     }
   };
 
+  const sendCommand = (target, command) => {
+    if (!target) return;
+    try {
+      const result = target.webview.postMessage({ command });
+      if (result && typeof result.then === "function") {
+        result.catch(() => {});
+      }
+    } catch {}
+  };
+
+  let reloadTimer;
+  const autoRefreshSubscription = vscode.workspace.onDidSaveTextDocument(() => {
+    clearTimeout(reloadTimer);
+    reloadTimer = setTimeout(() => {
+      sendCommand(currentPanel, "reload");
+      sendCommand(currentView, "reload");
+    }, 200);
+  });
+
   const openPreviewCommand = vscode.commands.registerCommand(COMMAND, () => {
     if (currentPanel) {
       currentPanel.reveal(vscode.ViewColumn.Beside);
@@ -126,7 +145,12 @@ function activate(context) {
     { webviewOptions: { retainContextWhenHidden: true } },
   );
 
-  context.subscriptions.push(openPreviewCommand, previewViewProvider);
+  context.subscriptions.push(
+    openPreviewCommand,
+    previewViewProvider,
+    autoRefreshSubscription,
+  );
+  context.subscriptions.push({ dispose: () => clearTimeout(reloadTimer) });
 }
 
 function deactivate() {}

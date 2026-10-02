@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.6.0
+
+- Added a Reload button to the toolbar and keyboard shortcuts: R rotates, +/- zooms, Ctrl/Cmd+R reloads the preview, Ctrl/Cmd+L focuses the URL bar, Escape closes overlays.
+- Added an Auto-refresh toggle: when on, saving any file in the workspace reloads the preview automatically.
+- The preview now remembers your device, rotation, zoom, URL, and auto-refresh choice when the view is rebuilt.
+- Added a recent-URLs list: open the URL bar and click the chevron to jump back to any of your last 10 URLs.
+
 ## 3.5.7
 
 - Shows a clear error screen inside the phone when the previewed server is not running: "Server not reachable" with the URL, a hint, and a Reload button. The preview now probes the URL after each load instead of showing a blank white screen.
