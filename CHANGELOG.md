@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.5.1
+
+- Fixed the preview clipping in a narrow sidebar: the toolbar now compacts below 440px so the phone frame stays fully visible.
+- The frame scale now uses the real visible width instead of the overflowing layout width.
+
 ## 3.5.0
 
 - Added a sidebar entry: click the Preview icon in the left activity bar to render the mobile preview directly in the sidebar.

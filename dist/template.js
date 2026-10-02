@@ -163,7 +163,7 @@ function getHtml(targetUrl, iframeUrl, localIp) {
     .preview-container,
     .preview-area {
       width: 100%;
-      height: calc(100vh - 48px);
+      height: 100%;
       min-height: 0;
       display: flex;
       align-items: center;
@@ -715,6 +715,43 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       background: rgba(255,255,255,0.14);
       color: white;
     }
+
+    @media (max-width: 440px) {
+      .toolbar-brand {
+        display: none;
+      }
+
+      .toolbar-actions {
+        padding: 0 2px;
+      }
+
+      .toolbar-btn {
+        width: 28px;
+        height: 28px;
+      }
+
+      .toolbar-btn svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .device-picker,
+      .device-select {
+        height: 40px;
+        padding: 0 24px 0 6px;
+        font-size: 12px;
+      }
+
+      .select-shell::after {
+        right: 8px;
+      }
+
+      #zoomLabel {
+        min-width: 20px !important;
+        font-size: 9px !important;
+        padding: 0 !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -957,7 +994,8 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       if (!previewArea || !phoneScale) return;
 
       const rect = previewArea.getBoundingClientRect();
-      const availW = Math.max(0, rect.width - 32);
+      const visW = Math.min(rect.width, document.documentElement.clientWidth);
+      const availW = Math.max(0, visW - 32);
       const availH = Math.max(0, rect.height - 32);
       const frameW = phoneScale.offsetWidth;
       const frameH = phoneScale.offsetHeight;
