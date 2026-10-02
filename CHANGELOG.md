@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.5.2
+
+- Fixed the sidebar preview not opening: the sidebar webview now enables scripts, so it renders the same mobile frame as the side panel.
+
 ## 3.5.1
 
 - Fixed the preview clipping in a narrow sidebar: the toolbar now compacts below 440px so the phone frame stays fully visible.

@@ -99,6 +99,8 @@ function activate(context) {
       resolveWebviewView(webviewView) {
         currentView = webviewView;
 
+        webviewView.webview.options = { enableScripts: true };
+
         const localIp = getLocalIp();
 
         try {
