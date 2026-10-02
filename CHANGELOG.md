@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.5.5
+
+- The URL bar now collapses into a small icon at the bottom-right corner: click it to edit the URL, and it hides again when you click the preview, so nothing on the phone screen gets covered.
+
 ## 3.5.4
 
 - The URL bar now floats at the bottom of the preview instead of taking a full row at the top, so the phone frame gets the extra height.

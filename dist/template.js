@@ -475,19 +475,31 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       right: 12px;
       bottom: 10px;
       box-sizing: border-box;
-      padding: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0;
       border-radius: 999px;
+      z-index: 50;
+      pointer-events: none;
+    }
+
+    .address-bar-wrap.open {
+      padding: 6px;
       background: rgba(14, 14, 16, 0.88);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       box-shadow:
         0 0 0 1px rgba(255,255,255,0.08),
         0 8px 32px rgba(0,0,0,0.55);
-      z-index: 50;
+      pointer-events: auto;
     }
 
     .address-bar {
-      width: 100%;
+      display: none;
+      flex: 1;
+      width: auto;
+      min-width: 0;
       height: 36px;
       border-radius: 999px;
       border: 1px solid rgba(255,255,255,0.15);
@@ -510,6 +522,50 @@ function getHtml(targetUrl, iframeUrl, localIp) {
 
     .address-bar::placeholder {
       color: rgba(255,255,255,0.4);
+    }
+
+    .address-bar-wrap.open .address-bar {
+      display: block;
+    }
+
+    .url-toggle {
+      margin-left: auto;
+      pointer-events: auto;
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(14, 14, 16, 0.92);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.08),
+        0 4px 16px rgba(0,0,0,0.5);
+      color: rgba(255,255,255,0.65);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      z-index: 51;
+    }
+
+    .url-toggle:hover {
+      background: rgba(30, 30, 34, 0.95);
+      color: rgba(255,255,255,0.9);
+    }
+
+    .url-toggle svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .address-bar-wrap.open .url-toggle {
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .address-bar-wrap.open .url-toggle:hover {
+      background: rgba(255,255,255,0.08);
     }
 
     .home-indicator {
@@ -811,7 +867,7 @@ function getHtml(targetUrl, iframeUrl, localIp) {
     </div>
   </header>
 
-  <div class="address-bar-wrap">
+  <div id="urlBar" class="address-bar-wrap">
     <input
       id="urlInput"
       class="address-bar"
@@ -819,6 +875,12 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       spellcheck="false"
       placeholder="Enter URL and press Enter"
     />
+    <button id="urlToggle" class="url-toggle" type="button" title="" aria-label="Show URL bar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+      </svg>
+    </button>
   </div>
 
   <main class="preview-container preview-area">
@@ -893,6 +955,8 @@ function getHtml(targetUrl, iframeUrl, localIp) {
     const catalog = ${catalogJson};
     const root = document.documentElement;
     const urlInput = document.getElementById("urlInput");
+    const urlBar = document.getElementById("urlBar");
+    const urlToggle = document.getElementById("urlToggle");
     const deviceSelect = document.getElementById("deviceSelect");
     const previewArea = document.querySelector(".preview-area");
     const phoneViewport = document.getElementById("phoneViewport");
@@ -922,6 +986,7 @@ function getHtml(targetUrl, iframeUrl, localIp) {
     const overlaySub = document.getElementById("overlaySub");
     const LOCAL_IP = "${safeIp}";
     urlInput.dataset.fullUrl = "${safeJsUrl}";
+    urlToggle.title = urlInput.dataset.fullUrl;
 
     function isDynamicIslandDevice(definition) {
       return definition.os === "ios" && /^iphone-(14|15|16|17)/.test(definition.id);
@@ -1063,6 +1128,7 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       const normalized = normalizeUrl(url);
       urlInput.dataset.fullUrl = normalized;
       urlInput.value = getUrlDisplayValue(normalized);
+      urlToggle.title = normalized;
       iframe.src = normalized;
       setOverlay("loading", normalized);
       vscode.postMessage({ command: "loadUrl", url: normalized });
@@ -1077,6 +1143,7 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       if (!normalized || normalized === urlInput.dataset.fullUrl) return;
       urlInput.dataset.fullUrl = normalized;
       urlInput.value = getUrlDisplayValue(normalized);
+      urlToggle.title = normalized;
       iframe.src = normalized;
       setOverlay("loading", normalized);
     });
@@ -1137,8 +1204,17 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       if (e.target === qrOverlay) qrOverlay.classList.remove("open");
     });
 
+    urlToggle.addEventListener("click", () => {
+      const open = urlBar.classList.toggle("open");
+      if (open) urlInput.focus();
+    });
+
     urlInput.addEventListener("keydown", (event) => {
       if (event.key === "Enter") submit();
+      if (event.key === "Escape") {
+        urlBar.classList.remove("open");
+        urlInput.blur();
+      }
     });
 
     urlInput.addEventListener("focus", () => {
@@ -1146,10 +1222,13 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       requestAnimationFrame(() => urlInput.select());
     });
 
-    urlInput.addEventListener("blur", () => {
+    urlInput.addEventListener("blur", (event) => {
       const fullUrl = normalizeUrl(urlInput.dataset.fullUrl || urlInput.value);
       urlInput.dataset.fullUrl = fullUrl;
       urlInput.value = getUrlDisplayValue(fullUrl);
+      if (!event.relatedTarget || !urlBar.contains(event.relatedTarget)) {
+        urlBar.classList.remove("open");
+      }
     });
 
     let resizeTimer;
