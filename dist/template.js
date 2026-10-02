@@ -714,9 +714,10 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(0,0,0,0.6);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      padding: 16px;
+      background: radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.78) 100%);
+      backdrop-filter: blur(16px) saturate(0.9);
+      -webkit-backdrop-filter: blur(16px) saturate(0.9);
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.25s ease;
@@ -728,55 +729,134 @@ function getHtml(targetUrl, iframeUrl, localIp) {
     }
 
     .qr-card {
-      background: #1a1a1e;
-      border-radius: 16px;
-      padding: 24px 32px;
+      position: relative;
+      width: 100%;
+      max-width: 304px;
+      box-sizing: border-box;
+      background: linear-gradient(180deg, #1d1d22 0%, #151518 100%);
+      border-radius: 20px;
+      padding: 28px 24px 24px;
       text-align: center;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-      border: 1px solid rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.07);
+      box-shadow:
+        0 0 0 1px rgba(0,0,0,0.5),
+        0 24px 80px rgba(0,0,0,0.7),
+        inset 0 1px 0 rgba(255,255,255,0.06);
+      transform: translateY(10px) scale(0.97);
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
-    .qr-card img {
-      width: 200px;
-      height: 200px;
-      border-radius: 8px;
-      display: block;
-      margin: 0 auto 16px;
+    .qr-overlay.open .qr-card {
+      transform: none;
     }
 
-    .qr-card .qr-url {
-      color: rgba(255,255,255,0.5);
-      font-size: 12px;
-      max-width: 260px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      margin-bottom: 16px;
-    }
-
-    .qr-card .qr-close {
-      background: rgba(255,255,255,0.08);
+    .qr-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 32px;
+      height: 32px;
+      padding: 0;
       border: none;
-      color: rgba(255,255,255,0.7);
-      padding: 8px 24px;
       border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: transparent;
+      color: rgba(255,255,255,0.45);
       cursor: pointer;
-      font-size: 13px;
       transition: all 0.2s ease;
     }
 
-    .qr-card .qr-note {
-      color: rgba(255,255,255,0.3);
+    .qr-close:hover {
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.9);
+    }
+
+    .qr-close:active {
+      background: rgba(255,255,255,0.12);
+    }
+
+    .qr-close:focus-visible {
+      outline: 2px solid rgba(0, 122, 255, 0.75);
+      outline-offset: 2px;
+    }
+
+    .qr-close svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .qr-head {
+      margin-bottom: 18px;
+    }
+
+    .qr-icon {
+      width: 38px;
+      height: 38px;
+      margin: 0 auto 12px;
+      border-radius: 11px;
+      display: grid;
+      place-items: center;
+      background: rgba(0, 122, 255, 0.14);
+      border: 1px solid rgba(0, 122, 255, 0.28);
+      color: rgba(130, 185, 255, 0.95);
+    }
+
+    .qr-icon svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .qr-title {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: rgba(255,255,255,0.92);
+    }
+
+    .qr-plate {
+      width: min(232px, 100%);
+      aspect-ratio: 1;
+      box-sizing: border-box;
+      margin: 0 auto 16px;
+      padding: 16px;
+      background: #ffffff;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      box-shadow:
+        0 4px 20px rgba(0,0,0,0.4),
+        inset 0 0 0 1px rgba(0,0,0,0.05);
+    }
+
+    .qr-plate img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      image-rendering: pixelated;
+    }
+
+    .qr-url {
+      font: 500 11px/1.3 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      color: rgba(255,255,255,0.75);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 999px;
+      padding: 6px 14px;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-bottom: 14px;
+    }
+
+    .qr-note {
+      color: rgba(255,255,255,0.32);
       font-size: 11px;
       text-align: center;
       max-width: 240px;
-      line-height: 1.4;
-      margin: -8px 0 16px;
-    }
-
-    .qr-card .qr-close:hover {
-      background: rgba(255,255,255,0.14);
-      color: white;
+      line-height: 1.5;
+      margin: 0 auto;
     }
 
     @media (max-width: 440px) {
@@ -942,11 +1022,33 @@ function getHtml(targetUrl, iframeUrl, localIp) {
   </main>
 
   <div id="qrOverlay" class="qr-overlay">
-    <div class="qr-card">
-      <img id="qrImage" alt="QR Code" />
+    <div class="qr-card" role="dialog" aria-modal="true" aria-label="Scan QR code">
+      <button id="qrClose" class="qr-close" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+      <div class="qr-head">
+        <div class="qr-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+            <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+            <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+            <line x1="14" y1="14" x2="17.5" y2="14"/>
+            <line x1="21" y1="14" x2="21" y2="17.5"/>
+            <line x1="14" y1="17.5" x2="14" y2="21"/>
+            <line x1="17.5" y1="21" x2="21" y2="21"/>
+            <line x1="21" y1="18" x2="21" y2="18" stroke-width="2.5"/>
+          </svg>
+        </div>
+        <div class="qr-title">Scan to open on your phone</div>
+      </div>
+      <div class="qr-plate">
+        <img id="qrImage" alt="QR code" />
+      </div>
       <div id="qrUrl" class="qr-url"></div>
       <div class="qr-note">Phone &amp; laptop must be on the same Wi‑Fi network</div>
-      <button id="qrClose" class="qr-close">Close</button>
     </div>
   </div>
 
@@ -1194,14 +1296,22 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       qrImage.src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(url);
       qrUrl.textContent = getUrlDisplayValue(url);
       qrOverlay.classList.add("open");
+      qrClose.focus();
     });
 
-    qrClose.addEventListener("click", () => {
+    function closeQr() {
       qrOverlay.classList.remove("open");
-    });
+      qrBtn.focus();
+    }
+
+    qrClose.addEventListener("click", closeQr);
 
     qrOverlay.addEventListener("click", (e) => {
-      if (e.target === qrOverlay) qrOverlay.classList.remove("open");
+      if (e.target === qrOverlay) closeQr();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && qrOverlay.classList.contains("open")) closeQr();
     });
 
     urlToggle.addEventListener("click", () => {

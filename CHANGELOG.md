@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.5.6
+
+- Redesigned the QR code modal: layered card, icon header, QR on a white plate, URL chip, close button, entrance animation, Escape-to-close and focus handling.
+
 ## 3.5.5
 
 - The URL bar now collapses into a small icon at the bottom-right corner: click it to edit the URL, and it hides again when you click the preview, so nothing on the phone screen gets covered.
