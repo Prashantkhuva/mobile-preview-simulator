@@ -17,7 +17,7 @@ function getHtml(targetUrl, iframeUrl, localIp) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; frame-src http: https:; img-src https: data:;" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; frame-src http: https:; img-src https: data:; connect-src http: https:;" />
   <title>Mobile Preview Simulator</title>
   <style>
     :root {
@@ -703,6 +703,43 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       white-space: nowrap;
     }
 
+    .frame-overlay .spinner.hidden,
+    .frame-overlay .hint.hidden,
+    .frame-overlay .overlay-retry.hidden {
+      display: none;
+    }
+
+    .frame-overlay .hint {
+      color: rgba(255,255,255,0.45);
+      font-size: 11px;
+      text-align: center;
+      max-width: 82%;
+      line-height: 1.5;
+      margin-top: 6px;
+    }
+
+    .frame-overlay .overlay-retry {
+      margin-top: 14px;
+      padding: 7px 22px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(0, 122, 255, 0.92);
+      color: white;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .frame-overlay .overlay-retry:hover {
+      background: rgba(0, 122, 255, 1);
+      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+    }
+
+    .frame-overlay .overlay-retry:active {
+      transform: scale(0.96);
+    }
+
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
@@ -1014,6 +1051,8 @@ function getHtml(targetUrl, iframeUrl, localIp) {
               <div id="overlayIcon" class="icon hidden">!</div>
               <div id="overlayMsg" class="msg">Loading...</div>
               <div id="overlaySub" class="sub"></div>
+              <div id="overlayHint" class="hint hidden">Start your dev server, then reload.</div>
+              <button id="overlayRetry" class="overlay-retry hidden" type="button">Reload</button>
             </div>
           </div>
         </div>
@@ -1086,6 +1125,8 @@ function getHtml(targetUrl, iframeUrl, localIp) {
     const overlayIcon = document.getElementById("overlayIcon");
     const overlayMsg = document.getElementById("overlayMsg");
     const overlaySub = document.getElementById("overlaySub");
+    const overlayHint = document.getElementById("overlayHint");
+    const overlayRetry = document.getElementById("overlayRetry");
     const LOCAL_IP = "${safeIp}";
     urlInput.dataset.fullUrl = "${safeJsUrl}";
     urlToggle.title = urlInput.dataset.fullUrl;
@@ -1151,17 +1192,35 @@ function getHtml(targetUrl, iframeUrl, localIp) {
         frameOverlay.classList.remove("hidden");
         overlaySpinner.classList.remove("hidden");
         overlayIcon.classList.add("hidden");
+        overlayHint.classList.add("hidden");
+        overlayRetry.classList.add("hidden");
         overlayMsg.textContent = "Loading...";
         overlaySub.textContent = url || "";
       } else if (state === "error") {
         frameOverlay.classList.remove("hidden");
         overlaySpinner.classList.add("hidden");
         overlayIcon.classList.remove("hidden");
-        overlayMsg.textContent = "Unable to connect";
+        overlayHint.classList.remove("hidden");
+        overlayRetry.classList.remove("hidden");
+        overlayMsg.textContent = "Server not reachable";
         overlaySub.textContent = url || "";
       } else {
         frameOverlay.classList.add("hidden");
       }
+    }
+
+    function probeServer(url) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 6000);
+      return fetch(url, { mode: "no-cors", cache: "no-store", signal: controller.signal })
+        .then(() => {
+          clearTimeout(timer);
+          return true;
+        })
+        .catch(() => {
+          clearTimeout(timer);
+          return false;
+        });
     }
 
     function scaleFrame() {
@@ -1250,12 +1309,23 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       setOverlay("loading", normalized);
     });
 
-    iframe.addEventListener("load", () => {
-      setOverlay("hide");
+    let probeToken = 0;
+
+    iframe.addEventListener("load", async () => {
+      const token = ++probeToken;
+      const target = urlInput.dataset.fullUrl;
+      const reachable = await probeServer(target);
+      if (token !== probeToken) return;
+      if (reachable) setOverlay("hide");
+      else setOverlay("error", target);
     });
 
     iframe.addEventListener("error", () => {
-      setOverlay("error", iframe.src);
+      setOverlay("error", urlInput.dataset.fullUrl);
+    });
+
+    overlayRetry.addEventListener("click", () => {
+      submitUrl(urlInput.dataset.fullUrl);
     });
 
     deviceSelect.addEventListener("change", () => {

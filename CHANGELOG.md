@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.5.7
+
+- Shows a clear error screen inside the phone when the previewed server is not running: "Server not reachable" with the URL, a hint, and a Reload button. The preview now probes the URL after each load instead of showing a blank white screen.
+
 ## 3.5.6
 
 - Redesigned the QR code modal: layered card, icon header, QR on a white plate, URL chip, close button, entrance animation, Escape-to-close and focus handling.
