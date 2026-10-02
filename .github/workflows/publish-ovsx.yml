@@ -16,4 +16,4 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
-      - run: npx ovsx@0.10.12 publish --trusted-publishing
+      - run: npx ovsx@1.2.0 publish --trusted-publishing
