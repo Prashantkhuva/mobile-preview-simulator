@@ -49,7 +49,7 @@ function getHtml(targetUrl, iframeUrl, localIp) {
 
     body {
       display: grid;
-      grid-template-rows: auto 1fr;
+      grid-template-rows: auto auto 1fr;
       color: var(--text);
       font: 13px/1.4 -apple-system, "Segoe UI", system-ui, sans-serif;
       background:
@@ -470,13 +470,14 @@ function getHtml(targetUrl, iframeUrl, localIp) {
     }
 
     .address-bar-wrap {
-      position: absolute;
-      bottom: 28px;
-      left: 50%;
-      width: 82%;
-      transform: translateX(-50%);
-      z-index: 999999;
-      pointer-events: auto;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 7px 10px;
+      background: rgba(10, 10, 12, 0.72);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      z-index: 10;
     }
 
     .address-bar {
@@ -804,6 +805,16 @@ function getHtml(targetUrl, iframeUrl, localIp) {
     </div>
   </header>
 
+  <div class="address-bar-wrap">
+    <input
+      id="urlInput"
+      class="address-bar"
+      value="${safeTarget}"
+      spellcheck="false"
+      placeholder="Enter URL and press Enter"
+    />
+  </div>
+
   <main class="preview-container preview-area">
     <div id="phoneViewport" class="phone-viewport">
       <div id="phoneScale" class="phone-scale phone-frame-wrapper">
@@ -848,16 +859,6 @@ function getHtml(targetUrl, iframeUrl, localIp) {
               title="Mobile Preview"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
             ></iframe>
-
-            <div class="address-bar-wrap">
-              <input
-                id="urlInput"
-                class="address-bar"
-                value="${safeTarget}"
-                spellcheck="false"
-                placeholder="Enter URL and press Enter"
-              />
-            </div>
 
             <div id="homeIndicator" class="home-indicator"></div>
             <div id="frameOverlay" class="frame-overlay hidden">

@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.5.3
+
+- Moved the URL bar out of the phone screen into its own row under the device-size toolbar, so the previewed site gets the full screen height.
+
 ## 3.5.2
 
 - Fixed the sidebar preview not opening: the sidebar webview now enables scripts, so it renders the same mobile frame as the side panel.
