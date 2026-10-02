@@ -9,6 +9,7 @@ const COMMAND = "mobile-preview-simulator.openPreview";
 const VIEW_TYPE = "mobilePreviewSimulator";
 
 let currentPanel;
+let currentView;
 let currentState = { url: DEFAULT_URL };
 
 function getLocalIp() {
@@ -26,84 +27,101 @@ function getLocalIp() {
 }
 
 function activate(context) {
-  const openPreviewCommand = vscode.commands.registerCommand(
-    COMMAND,
-    () => {
-      if (currentPanel) {
-        currentPanel.reveal(vscode.ViewColumn.Beside);
-        return;
+  const sendUrl = (target, url) => {
+    try {
+      const result = target.webview.postMessage({ command: "setUrl", url });
+      if (result && typeof result.then === "function") {
+        result.catch(() => {});
       }
+    } catch {}
+  };
 
-      const panel = vscode.window.createWebviewPanel(
-        VIEW_TYPE,
-        "Open Preview",
-        vscode.ViewColumn.Beside,
-        {
-          enableScripts: true,
-          retainContextWhenHidden: true,
-        },
-      );
+  const handleLoadUrl = (source, message) => {
+    if (!message || message.command !== "loadUrl") return;
+    const normalized = normalizeUrl(message.url || currentState.url);
+    currentState.url = normalized;
 
-      currentPanel = panel;
+    if (source === "panel") {
+      if (currentView) sendUrl(currentView, normalized);
+    } else if (currentPanel) {
+      sendUrl(currentPanel, normalized);
+    }
+  };
 
-      panel.iconPath = {
-        light: vscode.Uri.joinPath(context.extensionUri, "images", "icon.svg"),
-        dark: vscode.Uri.joinPath(context.extensionUri, "images", "icon-dark.svg"),
-      };
+  const openPreviewCommand = vscode.commands.registerCommand(COMMAND, () => {
+    if (currentPanel) {
+      currentPanel.reveal(vscode.ViewColumn.Beside);
+      return;
+    }
 
-      const localIp = getLocalIp();
+    const panel = vscode.window.createWebviewPanel(
+      VIEW_TYPE,
+      "Open Preview",
+      vscode.ViewColumn.Beside,
+      {
+        enableScripts: true,
+        retainContextWhenHidden: true,
+      },
+    );
 
-      const render = (targetUrl) => {
-        const normalized = normalizeUrl(targetUrl);
-        currentState.url = normalized;
-        panel.webview.html = getHtml(normalized, normalized, localIp);
-      };
+    currentPanel = panel;
 
-      try {
-        render(currentState.url);
-      } catch (error) {
-        const text = error instanceof Error ? error.message : String(error);
-        void vscode.window.showErrorMessage(`Open Preview: ${text}`);
-      }
+    panel.iconPath = {
+      light: vscode.Uri.joinPath(context.extensionUri, "images", "icon.svg"),
+      dark: vscode.Uri.joinPath(
+        context.extensionUri,
+        "images",
+        "icon-dark.svg",
+      ),
+    };
 
-      panel.onDidDispose(() => {
-        currentPanel = undefined;
-      });
+    const localIp = getLocalIp();
 
-      panel.webview.onDidReceiveMessage((message) => {
-        if (!message || message.command !== "loadUrl") return;
-        currentState.url = normalizeUrl(message.url || currentState.url);
-      });
-    },
-  );
+    try {
+      panel.webview.html = getHtml(currentState.url, currentState.url, localIp);
+    } catch (error) {
+      const text = error instanceof Error ? error.message : String(error);
+      void vscode.window.showErrorMessage(`Open Preview: ${text}`);
+    }
+
+    panel.onDidDispose(() => {
+      currentPanel = undefined;
+    });
+
+    panel.webview.onDidReceiveMessage((message) =>
+      handleLoadUrl("panel", message),
+    );
+  });
 
   const previewViewProvider = vscode.window.registerWebviewViewProvider(
     "mobile-preview-view",
     {
       resolveWebviewView(webviewView) {
-        void vscode.commands.executeCommand(
-          "mobile-preview-simulator.openPreview",
+        currentView = webviewView;
+
+        const localIp = getLocalIp();
+
+        try {
+          webviewView.webview.html = getHtml(
+            currentState.url,
+            currentState.url,
+            localIp,
+          );
+        } catch (error) {
+          const text = error instanceof Error ? error.message : String(error);
+          void vscode.window.showErrorMessage(`Open Preview: ${text}`);
+        }
+
+        webviewView.webview.onDidReceiveMessage((message) =>
+          handleLoadUrl("view", message),
         );
-        webviewView.webview.html = `
-        <html>
-          <body style="
-            background: #0a0a0a; 
-            display:flex; 
-            align-items:center; 
-            justify-content:center;
-            height:100vh;
-            color: rgba(255,255,255,0.4);
-            font-family: sans-serif;
-            font-size: 12px;
-            text-align: center;
-            padding: 16px;
-          ">
-            <p>Mobile Preview opened in side panel →</p>
-          </body>
-        </html>
-      `;
+
+        webviewView.onDidDispose(() => {
+          currentView = undefined;
+        });
       },
     },
+    { webviewOptions: { retainContextWhenHidden: true } },
   );
 
   context.subscriptions.push(openPreviewCommand, previewViewProvider);

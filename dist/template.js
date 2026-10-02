@@ -1025,6 +1025,17 @@ function getHtml(targetUrl, iframeUrl, localIp) {
 
     function submit() { submitUrl(urlInput.value); }
 
+    window.addEventListener("message", (event) => {
+      const message = event.data;
+      if (!message || message.command !== "setUrl") return;
+      const normalized = normalizeUrl(message.url || "");
+      if (!normalized || normalized === urlInput.dataset.fullUrl) return;
+      urlInput.dataset.fullUrl = normalized;
+      urlInput.value = getUrlDisplayValue(normalized);
+      iframe.src = normalized;
+      setOverlay("loading", normalized);
+    });
+
     iframe.addEventListener("load", () => {
       setOverlay("hide");
     });

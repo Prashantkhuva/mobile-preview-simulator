@@ -24,11 +24,11 @@ This extension helps you preview a local website or app in a mobile-sized webvie
 
 It opens a side preview with:
 
-* A realistic mobile device frame
-* A device selector for phones and tablets
-* A built-in URL bar for switching preview targets
-* Support for common local dev URLs like `localhost:5173`
-* A fast launch action from the editor title bar
+- A realistic mobile device frame
+- A device selector for phones and tablets
+- A built-in URL bar for switching preview targets
+- Support for common local dev URLs like `localhost:5173`
+- A fast launch action from the editor title bar
 
 The default preview target is `http://localhost:5173`, which works well for Vite and many local frontend projects.
 
@@ -38,9 +38,9 @@ The default preview target is `http://localhost:5173`, which works well for Vite
 
 When you open the preview, the extension creates a VS Code webview panel beside the editor. Inside that panel, it renders:
 
-* A selectable device shell
-* A live iframe preview of your local app
-* Mobile-style chrome such as the status bar, camera area, and bottom address bar
+- A selectable device shell
+- A live iframe preview of your local app
+- Mobile-style chrome such as the status bar, camera area, and bottom address bar
 
 You can switch between multiple device sizes to quickly check layout behavior without leaving VS Code.
 
@@ -50,11 +50,11 @@ You can switch between multiple device sizes to quickly check layout behavior wi
 
 The extension currently includes device presets from:
 
-* Apple
-* Samsung
-* Google
-* OnePlus
-* Xiaomi
+- Apple
+- Samsung
+- Google
+- OnePlus
+- Xiaomi
 
 It also includes both phone and tablet layouts.
 
@@ -72,7 +72,9 @@ You can open the preview in two easy ways:
   <img src="./images/readme-shortcut.png" width="500"/>
 </p>
 
-After clicking the shortcut, the mobile preview opens in a side panel beside your current file.
+Both open the preview in a side panel beside your current file.
+
+You can also click the **Preview** icon in the left activity bar to render the preview directly inside the sidebar. The sidebar and the side panel stay in sync — changing the URL in one updates the other.
 
 ---
 
@@ -91,18 +93,18 @@ After clicking the shortcut, the mobile preview opens in a side panel beside you
 
 Mobile Preview Simulator is useful when you want to:
 
-* Check responsive layouts while coding
-* Review spacing, typography, and component sizing
-* Quickly compare screens across different mobile devices
-* Keep your preview inside VS Code instead of switching to a browser window
+- Check responsive layouts while coding
+- Review spacing, typography, and component sizing
+- Quickly compare screens across different mobile devices
+- Keep your preview inside VS Code instead of switching to a browser window
 
 ---
 
 ## Notes
 
-* The preview is designed for local web apps and development servers.
-* If your app is running on a different port, type the URL in the preview bar and press `Enter`.
-* If you only type a port such as `3000`, the extension automatically turns it into `http://localhost:3000`.
+- The preview is designed for local web apps and development servers.
+- If your app is running on a different port, type the URL in the preview bar and press `Enter`.
+- If you only type a port such as `3000`, the extension automatically turns it into `http://localhost:3000`.
 
 ---
 

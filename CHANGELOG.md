@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.5.0
+
+- Added a sidebar entry: click the Preview icon in the left activity bar to render the mobile preview directly in the sidebar.
+- Sidebar and side panel preview now share the same URL — editing it in one updates the other.
+
 ## 2.0.0
 
 - Promoted the extension to version 2.0.0 for the next Marketplace release.
