@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.7.0
+
+- Sites that refuse to be embedded (X-Frame-Options / frame-ancestors headers — common on Next.js, Create React App, and many production servers) now load inside the phone frame. The extension automatically runs a local loopback proxy that removes only the framing restrictions; your server config stays untouched. Page assets, redirects, and hot-reload websockets all work through it. The "Site blocks embedding" screen remains only as a fallback if the proxy cannot start.
+
 ## 3.6.1
 
 - Fixed the blank white screen when the previewed site refuses to be embedded: the extension now checks the page's framing headers (X-Frame-Options and frame-ancestors) and shows a "Site blocks embedding" screen with an explanation, a Reload button, and an Open in Browser button instead of a silent white phone.

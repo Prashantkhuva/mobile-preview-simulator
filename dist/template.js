@@ -1291,6 +1291,7 @@ function getHtml(targetUrl, iframeUrl, localIp) {
     let isLandscape = !!saved.landscape;
     let currentZoom = typeof saved.zoom === "number" ? saved.zoom : 1;
     let autoRefresh = !!saved.autoRefresh;
+    const frameUrlCache = {};
     let urlHistory = Array.isArray(saved.history) ? saved.history.slice(0, 10) : [];
     deviceSelect.value = currentDeviceId;
 
@@ -1441,7 +1442,7 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       urlInput.dataset.fullUrl = normalized;
       urlInput.value = getUrlDisplayValue(normalized);
       urlToggle.title = normalized;
-      iframe.src = normalized;
+      iframe.src = frameUrlCache[normalized] || normalized;
       setOverlay("loading", normalized);
       pushHistory(normalized);
       saveState();
@@ -1453,7 +1454,7 @@ function getHtml(targetUrl, iframeUrl, localIp) {
     function reloadFrame() {
       const url = urlInput.dataset.fullUrl || normalizeUrl(urlInput.value);
       setOverlay("loading", url);
-      iframe.src = url;
+      iframe.src = frameUrlCache[url] || url;
     }
 
     function openUrlBar() {
@@ -1494,9 +1495,21 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       }
       if (message.command === "probeResult") {
         if (message.token !== probeToken) return;
-        if (!message.ok) setOverlay("error", message.url);
-        else if (message.frameBlocked) setOverlay("blocked", message.url);
-        else setOverlay("hide");
+        if (!message.ok) {
+          setOverlay("error", message.url);
+          return;
+        }
+        if (message.frameBlocked && message.frameUrl && message.frameUrl !== iframe.src) {
+          frameUrlCache[message.url] = message.frameUrl;
+          setOverlay("loading", message.url);
+          iframe.src = message.frameUrl;
+          return;
+        }
+        if (message.frameBlocked && !message.frameUrl) {
+          setOverlay("blocked", message.url);
+          return;
+        }
+        setOverlay("hide");
         return;
       }
       if (message.command !== "setUrl") return;
@@ -1505,7 +1518,7 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       urlInput.dataset.fullUrl = normalized;
       urlInput.value = getUrlDisplayValue(normalized);
       urlToggle.title = normalized;
-      iframe.src = normalized;
+      iframe.src = frameUrlCache[normalized] || normalized;
       setOverlay("loading", normalized);
       pushHistory(normalized);
       saveState();
