@@ -26,14 +26,43 @@ function getLocalIp() {
   return "localhost";
 }
 
+async function probeUrl(url) {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    const response = await fetch(url, {
+      redirect: "follow",
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    const xfo = response.headers.get("x-frame-options");
+    const csp = response.headers.get("content-security-policy");
+    let frameBlocked = false;
+    if (xfo && xfo.trim()) frameBlocked = true;
+    if (csp && /frame-ancestors/i.test(csp)) {
+      const match = csp.match(/frame-ancestors([^;]*)/i);
+      const sources = match ? match[1] : "";
+      if (!sources.includes("*")) frameBlocked = true;
+    }
+    return { ok: true, frameBlocked };
+  } catch {
+    return { ok: false, frameBlocked: false };
+  }
+}
+
 function activate(context) {
-  const sendUrl = (target, url) => {
+  const postTo = (target, payload) => {
+    if (!target) return;
     try {
-      const result = target.webview.postMessage({ command: "setUrl", url });
+      const result = target.webview.postMessage(payload);
       if (result && typeof result.then === "function") {
         result.catch(() => {});
       }
     } catch {}
+  };
+
+  const sendUrl = (target, url) => {
+    postTo(target, { command: "setUrl", url });
   };
 
   const handleLoadUrl = (source, message) => {
@@ -48,14 +77,34 @@ function activate(context) {
     }
   };
 
+  const handleMessage = (source, message) => {
+    if (!message) return;
+    if (message.command === "probe") {
+      const url = String(message.url || "");
+      const token = message.token;
+      probeUrl(url).then((result) => {
+        const target = source === "panel" ? currentPanel : currentView;
+        postTo(target, {
+          command: "probeResult",
+          token,
+          url,
+          ok: result.ok,
+          frameBlocked: result.frameBlocked,
+        });
+      });
+      return;
+    }
+    if (message.command === "openExternal" && message.url) {
+      try {
+        void vscode.env.openExternal(vscode.Uri.parse(String(message.url)));
+      } catch {}
+      return;
+    }
+    handleLoadUrl(source, message);
+  };
+
   const sendCommand = (target, command) => {
-    if (!target) return;
-    try {
-      const result = target.webview.postMessage({ command });
-      if (result && typeof result.then === "function") {
-        result.catch(() => {});
-      }
-    } catch {}
+    postTo(target, { command });
   };
 
   let reloadTimer;
@@ -108,7 +157,7 @@ function activate(context) {
     });
 
     panel.webview.onDidReceiveMessage((message) =>
-      handleLoadUrl("panel", message),
+      handleMessage("panel", message),
     );
   });
 
@@ -134,7 +183,7 @@ function activate(context) {
         }
 
         webviewView.webview.onDidReceiveMessage((message) =>
-          handleLoadUrl("view", message),
+          handleMessage("view", message),
         );
 
         webviewView.onDidDispose(() => {

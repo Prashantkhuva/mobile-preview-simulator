@@ -787,7 +787,8 @@ function getHtml(targetUrl, iframeUrl, localIp) {
 
     .frame-overlay .spinner.hidden,
     .frame-overlay .hint.hidden,
-    .frame-overlay .overlay-retry.hidden {
+    .frame-overlay .overlay-retry.hidden,
+    .frame-overlay .overlay-open.hidden {
       display: none;
     }
 
@@ -819,6 +820,28 @@ function getHtml(targetUrl, iframeUrl, localIp) {
     }
 
     .frame-overlay .overlay-retry:active {
+      transform: scale(0.96);
+    }
+
+    .frame-overlay .overlay-open {
+      margin-top: 8px;
+      padding: 7px 22px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.85);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .frame-overlay .overlay-open:hover {
+      background: rgba(255,255,255,0.12);
+      border-color: rgba(255,255,255,0.35);
+    }
+
+    .frame-overlay .overlay-open:active {
       transform: scale(0.96);
     }
 
@@ -1157,6 +1180,7 @@ function getHtml(targetUrl, iframeUrl, localIp) {
               <div id="overlaySub" class="sub"></div>
               <div id="overlayHint" class="hint hidden">Start your dev server, then reload.</div>
               <button id="overlayRetry" class="overlay-retry hidden" type="button">Reload</button>
+              <button id="overlayOpen" class="overlay-open hidden" type="button">Open in Browser</button>
             </div>
           </div>
         </div>
@@ -1236,6 +1260,7 @@ function getHtml(targetUrl, iframeUrl, localIp) {
     const overlaySub = document.getElementById("overlaySub");
     const overlayHint = document.getElementById("overlayHint");
     const overlayRetry = document.getElementById("overlayRetry");
+    const overlayOpen = document.getElementById("overlayOpen");
     const LOCAL_IP = "${safeIp}";
     urlInput.dataset.fullUrl = "${safeJsUrl}";
     urlToggle.title = urlInput.dataset.fullUrl;
@@ -1320,6 +1345,7 @@ function getHtml(targetUrl, iframeUrl, localIp) {
         overlayIcon.classList.add("hidden");
         overlayHint.classList.add("hidden");
         overlayRetry.classList.add("hidden");
+        overlayOpen.classList.add("hidden");
         overlayMsg.textContent = "Loading...";
         overlaySub.textContent = url || "";
       } else if (state === "error") {
@@ -1328,25 +1354,24 @@ function getHtml(targetUrl, iframeUrl, localIp) {
         overlayIcon.classList.remove("hidden");
         overlayHint.classList.remove("hidden");
         overlayRetry.classList.remove("hidden");
+        overlayOpen.classList.add("hidden");
         overlayMsg.textContent = "Server not reachable";
         overlaySub.textContent = url || "";
+        overlayHint.textContent = "Start your dev server, then reload.";
+      } else if (state === "blocked") {
+        frameOverlay.classList.remove("hidden");
+        overlaySpinner.classList.add("hidden");
+        overlayIcon.classList.remove("hidden");
+        overlayHint.classList.remove("hidden");
+        overlayRetry.classList.remove("hidden");
+        overlayOpen.classList.remove("hidden");
+        overlayMsg.textContent = "Site blocks embedding";
+        overlaySub.textContent = url || "";
+        overlayHint.textContent =
+          "The server sends X-Frame-Options or frame-ancestors headers that forbid showing it inside an iframe.";
       } else {
         frameOverlay.classList.add("hidden");
       }
-    }
-
-    function probeServer(url) {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 6000);
-      return fetch(url, { mode: "no-cors", cache: "no-store", signal: controller.signal })
-        .then(() => {
-          clearTimeout(timer);
-          return true;
-        })
-        .catch(() => {
-          clearTimeout(timer);
-          return false;
-        });
     }
 
     function scaleFrame() {
@@ -1458,11 +1483,20 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       if (urlHistory.length === 0) historyList.classList.add("hidden");
     }
 
+    let probeToken = 0;
+
     window.addEventListener("message", (event) => {
       const message = event.data;
       if (!message) return;
       if (message.command === "reload") {
         if (autoRefresh) reloadFrame();
+        return;
+      }
+      if (message.command === "probeResult") {
+        if (message.token !== probeToken) return;
+        if (!message.ok) setOverlay("error", message.url);
+        else if (message.frameBlocked) setOverlay("blocked", message.url);
+        else setOverlay("hide");
         return;
       }
       if (message.command !== "setUrl") return;
@@ -1477,19 +1511,24 @@ function getHtml(targetUrl, iframeUrl, localIp) {
       saveState();
     });
 
-    let probeToken = 0;
-
-    iframe.addEventListener("load", async () => {
+    iframe.addEventListener("load", () => {
       const token = ++probeToken;
-      const target = urlInput.dataset.fullUrl;
-      const reachable = await probeServer(target);
-      if (token !== probeToken) return;
-      if (reachable) setOverlay("hide");
-      else setOverlay("error", target);
+      vscode.postMessage({
+        command: "probe",
+        url: urlInput.dataset.fullUrl,
+        token,
+      });
     });
 
     iframe.addEventListener("error", () => {
       setOverlay("error", urlInput.dataset.fullUrl);
+    });
+
+    overlayOpen.addEventListener("click", () => {
+      vscode.postMessage({
+        command: "openExternal",
+        url: urlInput.dataset.fullUrl,
+      });
     });
 
     overlayRetry.addEventListener("click", () => {

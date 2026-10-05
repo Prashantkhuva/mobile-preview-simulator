@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.6.1
+
+- Fixed the blank white screen when the previewed site refuses to be embedded: the extension now checks the page's framing headers (X-Frame-Options and frame-ancestors) and shows a "Site blocks embedding" screen with an explanation, a Reload button, and an Open in Browser button instead of a silent white phone.
+
 ## 3.6.0
 
 - Added a Reload button to the toolbar and keyboard shortcuts: R rotates, +/- zooms, Ctrl/Cmd+R reloads the preview, Ctrl/Cmd+L focuses the URL bar, Escape closes overlays.
